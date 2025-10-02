@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StableBitcoin - Bitcoin-Collateralized Stability Protocol</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fab fa-bitcoin"></i>
+                <span>StableBitcoin</span>
+            </div>
+            <div class="nav-menu">
+                <a href="#home" class="nav-link">Home</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#swap" class="nav-link">Swap</a>
+                <a href="#docs" class="nav-link">Docs</a>
+                <a href="public/StableBitcoin Litepaper.pdf" target="_blank" class="nav-link litepaper-link">
+                    <i class="fas fa-file-pdf"></i> Litepaper
+                </a>
+                <button class="connect-wallet-btn">Connect Wallet</button>
+            </div>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Bitcoin-Collateralized Stability Protocol
+                </h1>
+                <p class="hero-subtitle">
+                    StableBitcoin is Money collateralized with Bitcoin.
+                </p>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-number">$0.00</div>
+                        <div class="stat-label">SBTC Price</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Total Supply</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">0%</div>
+                        <div class="stat-label">APY</div>
+                    </div>
+                </div>
+                <div class="hero-buttons">
+                    <button class="btn-primary">Start Swapping</button>
+                    <a href="public/StableBitcoin Litepaper.pdf" target="_blank" class="btn-secondary litepaper-btn">
+                        <i class="fas fa-file-pdf"></i> Read Litepaper
+                    </a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="crypto-animation">
+                    <div class="bitcoin-icon">
+                        <i class="fab fa-bitcoin"></i>
+                    </div>
+                    <div class="arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                    <div class="stablecoin-icon">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <div class="section-header">
+                <h2>Why StableBitcoin?</h2>
+                <p>Revolutionary stability mechanisms built on Bitcoin's foundation</p>
+                <div class="litepaper-cta">
+                    <a href="public/StableBitcoin Litepaper.pdf" target="_blank" class="litepaper-cta-link">
+                        <i class="fas fa-file-pdf"></i>
+                        <span>Read our comprehensive litepaper to learn more about the protocol</span>
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Bitcoin-Backed Security</h3>
+                    <p>Leverages Bitcoin's proven security model and decentralization principles for maximum trust and reliability.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Advanced Stability</h3>
+                    <p>Sophisticated algorithms maintain price stability while preserving the benefits of decentralized finance.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-unlock"></i>
+                    </div>
+                    <h3>Decentralized Governance</h3>
+                    <p>Community-driven protocol with transparent governance mechanisms and no single point of failure.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Fast & Efficient</h3>
+                    <p>Optimized for speed and efficiency with minimal transaction costs and instant settlements.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Swap Section -->
+    <section id="swap" class="swap-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Swap zBTC to SBTC</h2>
+                <p>Convert your zBTC tokens to StableBitcoin (SBTC) seamlessly</p>
+            </div>
+            <div class="swap-container">
+                <div class="swap-card">
+                    <div class="swap-header">
+                        <h3>Token Swap</h3>
+                        <div class="swap-info">
+                            <span class="info-item">
+                                <i class="fas fa-info-circle"></i>
+                                Slippage: 0.5%
+                            </span>
+                            <span class="info-item">
+                                <i class="fas fa-clock"></i>
+                                ~2 min
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="swap-form">
+                        <div class="token-input">
+                            <div class="token-header">
+                                <span class="label">From</span>
+                                <span class="balance">Balance: 0.00 zBTC</span>
+                            </div>
+                            <div class="input-group">
+                                <input type="number" placeholder="0.0" class="amount-input" id="fromAmount">
+                                <div class="token-selector">
+                                    <div class="token-info">
+                                        <div class="token-logo">
+                                            <i class="fab fa-bitcoin"></i>
+                                        </div>
+                                        <span class="token-symbol">zBTC</span>
+                                    </div>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="swap-button">
+                            <button class="swap-arrow" id="swapTokens">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                        </div>
+
+                        <div class="token-input">
+                            <div class="token-header">
+                                <span class="label">To</span>
+                                <span class="balance">Balance: 0.00 SBTC</span>
+                            </div>
+                            <div class="input-group">
+                                <input type="number" placeholder="0.0" class="amount-input" id="toAmount" readonly>
+                                <div class="token-selector">
+                                    <div class="token-info">
+                                        <div class="token-logo">
+                                            <i class="fas fa-coins"></i>
+                                        </div>
+                                        <span class="token-symbol">SBTC</span>
+                                    </div>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="swap-details">
+                        <div class="detail-row">
+                            <span>Exchange Rate</span>
+                            <span>1 zBTC = 1.00 SBTC</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Minimum Received</span>
+                            <span>0.00 SBTC</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Price Impact</span>
+                            <span class="positive">0.00%</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Network Fee</span>
+                            <span>0.001 ETH</span>
+                        </div>
+                    </div>
+
+                    <button class="swap-submit-btn" id="swapSubmit" disabled>
+                        <i class="fas fa-exchange-alt"></i>
+                        Swap zBTC for SBTC
+                    </button>
+                </div>
+
+                <div class="swap-info-panel">
+                    <h4>Swap Information</h4>
+                    <div class="info-content">
+                        <div class="info-section">
+                            <h5>How it works</h5>
+                            <p>StableBitcoin uses advanced algorithms to maintain price stability while preserving the security benefits of Bitcoin.</p>
+                        </div>
+                        <div class="info-section">
+                            <h5>Security</h5>
+                            <p>All swaps are secured by smart contracts and audited for maximum safety and transparency.</p>
+                        </div>
+                        <div class="info-section">
+                            <h5>Fees</h5>
+                            <p>Low transaction fees with no hidden costs. All fees are transparent and displayed before confirmation.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Protocol Features</h2>
+                <p>Advanced mechanisms for optimal stability and performance</p>
+            </div>
+            <div class="features-list">
+                <div class="feature-item">
+                    <div class="feature-number">01</div>
+                    <div class="feature-content">
+                        <h3>Dynamic Stability Mechanism</h3>
+                        <p>Automatically adjusts supply based on demand to maintain price stability around $1.00 USD equivalent.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-number">02</div>
+                    <div class="feature-content">
+                        <h3>Bitcoin Collateralization</h3>
+                        <p>Backed by Bitcoin reserves ensuring intrinsic value and security through the world's most trusted cryptocurrency.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-number">03</div>
+                    <div class="feature-content">
+                        <h3>Governance Token Integration</h3>
+                        <p>Community-driven decisions through governance tokens, ensuring the protocol evolves with user needs.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-number">04</div>
+                    <div class="feature-content">
+                        <h3>Cross-Chain Compatibility</h3>
+                        <p>Seamless integration across multiple blockchain networks for maximum accessibility and utility.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Experience Stable Bitcoin?</h2>
+                <p>Join the future of decentralized stablecoins built on Bitcoin's foundation</p>
+                <div class="cta-buttons">
+                    <button class="btn-primary">Start Swapping Now</button>
+                    <button class="btn-outline">Read Documentation</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo">
+                        <i class="fab fa-bitcoin"></i>
+                        <span>StableBitcoin</span>
+                    </div>
+                    <p>Bitcoin-Collateralized Stability Protocol</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-github"></i></a>
+                        <a href="#"><i class="fab fa-discord"></i></a>
+                        <a href="#"><i class="fab fa-telegram"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Protocol</h4>
+                    <ul>
+                        <li><a href="#">How it Works</a></li>
+                        <li><a href="public/StableBitcoin Litepaper.pdf" target="_blank">Litepaper</a></li>
+                        <li><a href="#">Audit Reports</a></li>
+                        <li><a href="#">Governance</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Developers</h4>
+                    <ul>
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">API Reference</a></li>
+                        <li><a href="#">GitHub</a></li>
+                        <li><a href="#">Bug Bounty</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Community</h4>
+                    <ul>
+                        <li><a href="#">Discord</a></li>
+                        <li><a href="#">Telegram</a></li>
+                        <li><a href="#">Twitter</a></li>
+                        <li><a href="#">Blog</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 StableBitcoin. All rights reserved.</p>
+                <div class="footer-links">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
