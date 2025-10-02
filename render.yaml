@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: stablebitcoin
+    env: static
+    buildCommand: npm install
+    startCommand: ./start.sh
+    staticPublishPath: .
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
