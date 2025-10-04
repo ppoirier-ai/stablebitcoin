@@ -5,17 +5,17 @@
 
 // Oracle Configuration
 const ORACLE_CONFIG = {
-    // Solana DevNet RPC endpoint
-    RPC_URL: 'https://api.devnet.solana.com',
+    // Solana DevNet RPC endpoint (use environment variable if available)
+    RPC_URL: typeof process !== 'undefined' && process.env?.ORACLE_RPC_URL || 'https://api.devnet.solana.com',
     
-    // Program ID for the SMA Oracle (from the repository)
-    PROGRAM_ID: 'FtDpp1TsamUskkz2AS7NTuRGqyB3j4dpP7mj9ATHbDoa',
+    // Program ID for the SMA Oracle (use environment variable if available)
+    PROGRAM_ID: typeof process !== 'undefined' && process.env?.ORACLE_PROGRAM_ID || 'FtDpp1TsamUskkz2AS7NTuRGqyB3j4dpP7mj9ATHbDoa',
     
-    // Pyth Network BTC/USD Price Feed ID
-    PYTH_PRICE_FEED: '8SXvChNYFh3qEi4J6tK1wQREu5x6YdE3C6HmZzThoG6E',
+    // Pyth Network BTC/USD Price Feed ID (use environment variable if available)
+    PYTH_PRICE_FEED: typeof process !== 'undefined' && process.env?.PYTH_PRICE_FEED || '8SXvChNYFh3qEi4J6tK1wQREu5x6YdE3C6HmZzThoG6E',
     
     // Oracle state account (this would be derived from the program)
-    ORACLE_STATE_ACCOUNT: 'FtDpp1TsamUskkz2AS7NTuRGqyB3j4dpP7mj9ATHbDoa'
+    ORACLE_STATE_ACCOUNT: typeof process !== 'undefined' && process.env?.ORACLE_PROGRAM_ID || 'FtDpp1TsamUskkz2AS7NTuRGqyB3j4dpP7mj9ATHbDoa'
 };
 
 class StableBitcoinOracle {

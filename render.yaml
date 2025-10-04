@@ -5,6 +5,36 @@ services:
     buildCommand: npm install
     startCommand: ./start.sh
     staticPublishPath: .
+    # Environment variables for Oracle configuration
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ORACLE_RPC_URL
+        value: https://api.devnet.solana.com
+      - key: ORACLE_PROGRAM_ID
+        value: FtDpp1TsamUskkz2AS7NTuRGqyB3j4dpP7mj9ATHbDoa
+      - key: PYTH_PRICE_FEED
+        value: 8SXvChNYFh3qEi4J6tK1wQREu5x6YdE3C6HmZzThoG6E
+    # Headers for CORS and security
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-XSS-Protection
+        value: 1; mode=block
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*.js
+        name: Content-Type
+        value: application/javascript; charset=utf-8
+      - path: /*.css
+        name: Content-Type
+        value: text/css; charset=utf-8
     routes:
       - type: rewrite
         source: /*
