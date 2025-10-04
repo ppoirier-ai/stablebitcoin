@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Oracle Test - StableBitcoin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+            font-size: 16px;
+            width: 100%;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            min-height: 50px;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Simple Oracle Test</h1>
+        <p>This page tests the Oracle integration without external dependencies.</p>
+        
+        <button class="test-button" onclick="runAllTests()">🚀 Run All Tests</button>
+        <div id="testResult" class="result">Click "Run All Tests" to start...</div>
+    </div>
+
+    <script src="oracle-browser.js"></script>
+    <script>
+        async function runAllTests() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.textContent = 'Starting tests...';
+            resultDiv.className = 'result loading';
+            
+            let results = [];
+            
+            try {
+                // Test 1: Connection
+                resultDiv.textContent = 'Test 1: Testing connection...';
+                try {
+                    await oracle.initialize();
+                    results.push('✅ Test 1: Connection successful');
+                } catch (error) {
+                    results.push('❌ Test 1: Connection failed - ' + error.message);
+                }
+                
+                // Test 2: SBTC Price
+                resultDiv.textContent = 'Test 2: Fetching SBTC price...';
+                try {
+                    const sbtcResult = await oracle.getCurrentSBTCPrice();
+                    if (sbtcResult.success) {
+                        results.push(`✅ Test 2: SBTC Price - $${sbtcResult.data.sbtc_target_price} (${sbtcResult.data.data_source})`);
+                    } else {
+                        results.push('❌ Test 2: SBTC Price failed - ' + sbtcResult.error);
+                    }
+                } catch (error) {
+                    results.push('❌ Test 2: SBTC Price error - ' + error.message);
+                }
+                
+                // Test 3: BTC Price
+                resultDiv.textContent = 'Test 3: Fetching BTC price...';
+                try {
+                    const btcResult = await oracle.getCurrentBitcoinPrice();
+                    if (btcResult.success) {
+                        results.push(`✅ Test 3: BTC Price - $${btcResult.data.btc_price} (${btcResult.data.data_source})`);
+                    } else {
+                        results.push('❌ Test 3: BTC Price failed - ' + btcResult.error);
+                    }
+                } catch (error) {
+                    results.push('❌ Test 3: BTC Price error - ' + error.message);
+                }
+                
+                // Test 4: Full Data
+                resultDiv.textContent = 'Test 4: Fetching full price data...';
+                try {
+                    const fullResult = await oracle.getPriceData();
+                    if (fullResult.success) {
+                        results.push(`✅ Test 4: Full data retrieved successfully`);
+                        results.push(`   SBTC: $${fullResult.data.sbtc.sbtc_target_price}`);
+                        results.push(`   BTC: $${fullResult.data.btc.btc_price}`);
+                    } else {
+                        results.push('❌ Test 4: Full data failed - ' + JSON.stringify(fullResult.errors));
+                    }
+                } catch (error) {
+                    results.push('❌ Test 4: Full data error - ' + error.message);
+                }
+                
+                // Test 5: Network Status
+                resultDiv.textContent = 'Test 5: Checking network status...';
+                try {
+                    const status = await oracle.getNetworkStatus();
+                    if (status.connected) {
+                        results.push(`✅ Test 5: Network connected - Slot: ${status.currentSlot}`);
+                    } else {
+                        results.push('❌ Test 5: Network disconnected - ' + status.error);
+                    }
+                } catch (error) {
+                    results.push('❌ Test 5: Network status error - ' + error.message);
+                }
+                
+                // Display results
+                const successCount = results.filter(r => r.startsWith('✅')).length;
+                const totalCount = results.length;
+                
+                resultDiv.textContent = results.join('\n');
+                resultDiv.className = successCount === totalCount ? 'result success' : 'result error';
+                
+                results.push(`\n📊 Summary: ${successCount}/${totalCount} tests passed`);
+                resultDiv.textContent = results.join('\n');
+                
+            } catch (error) {
+                resultDiv.textContent = '❌ Test suite failed: ' + error.message;
+                resultDiv.className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html>

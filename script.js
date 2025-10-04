@@ -1,3 +1,5 @@
+// Oracle module is loaded via script tag in HTML
+
 // DOM Elements
 const hamburger = document.querySelector('.hamburger');
 const navMenu = document.querySelector('.nav-menu');
@@ -6,6 +8,89 @@ const fromAmountInput = document.getElementById('fromAmount');
 const toAmountInput = document.getElementById('toAmount');
 const swapSubmitBtn = document.getElementById('swapSubmit');
 const connectWalletBtn = document.querySelector('.connect-wallet-btn');
+
+// Price display elements
+const sbtcPriceElement = document.querySelector('.stat-number');
+
+// Oracle state
+let currentSBTCPrice = 0;
+let currentBTCPrice = 0;
+let isOracleConnected = false;
+
+// Oracle Integration Functions
+async function initializeOracle() {
+    try {
+        showNotification('Connecting to Oracle...', 'info');
+        
+        // Initialize Oracle connection
+        await oracle.initialize();
+        isOracleConnected = true;
+        
+        // Fetch initial price data
+        await updatePriceData();
+        
+        showNotification('Oracle connected successfully!', 'success');
+        
+        // Set up periodic price updates
+        setInterval(updatePriceData, 30000); // Update every 30 seconds
+        
+    } catch (error) {
+        console.error('Oracle initialization failed:', error);
+        showNotification('Failed to connect to Oracle. Using fallback data.', 'error');
+        isOracleConnected = false;
+        
+        // Use fallback price data
+        updatePriceTicker();
+    }
+}
+
+async function updatePriceData() {
+    if (!isOracleConnected) {
+        return;
+    }
+
+    try {
+        const priceData = await oracle.getPriceData();
+        
+        if (priceData.success && priceData.data) {
+            const { sbtc, btc } = priceData.data;
+            
+            if (sbtc && btc) {
+                currentSBTCPrice = sbtc.sbtc_target_price;
+                currentBTCPrice = btc.btc_price;
+                
+                // Validate price
+                const validation = oracle.validatePrice(currentSBTCPrice, currentBTCPrice);
+                if (!validation.valid) {
+                    console.warn('Price validation failed:', validation.reason);
+                    showNotification('Price validation warning: ' + validation.reason, 'error');
+                }
+                
+                // Update UI
+                updatePriceDisplay();
+                // Update swap details with current prices
+                if (fromAmountInput.value && toAmountInput.value) {
+                    updateSwapDetails(parseFloat(fromAmountInput.value), parseFloat(toAmountInput.value));
+                }
+            }
+        } else {
+            console.error('Failed to fetch price data:', priceData.errors);
+            showNotification('Failed to fetch latest prices from Oracle', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating price data:', error);
+        showNotification('Error updating prices: ' + error.message, 'error');
+    }
+}
+
+function updatePriceDisplay() {
+    if (sbtcPriceElement && currentSBTCPrice > 0) {
+        const formattedPrice = oracle.formatPrice(currentSBTCPrice, 2);
+        sbtcPriceElement.textContent = `$${formattedPrice}`;
+    }
+}
+
+
 
 // Mobile Navigation Toggle
 hamburger.addEventListener('click', () => {
@@ -79,10 +164,18 @@ fromAmountInput.addEventListener('input', (e) => {
     const amount = parseFloat(e.target.value) || 0;
     
     if (amount > 0) {
-        // Calculate exchange rate (1:1 for demo)
-        const exchangeRate = 1.0;
-        const calculatedAmount = amount * exchangeRate;
+        // Calculate exchange rate based on Oracle prices
+        let exchangeRate = 1.0; // Default fallback
         
+        if (isOracleConnected && currentSBTCPrice > 0 && currentBTCPrice > 0) {
+            // Use real Oracle prices for calculation
+            exchangeRate = currentSBTCPrice / currentBTCPrice;
+        } else {
+            // Show warning if Oracle data is not available
+            showNotification('Using estimated exchange rate. Oracle data unavailable.', 'error');
+        }
+        
+        const calculatedAmount = amount * exchangeRate;
         toAmountInput.value = calculatedAmount.toFixed(6);
         
         // Enable swap button
@@ -105,7 +198,14 @@ function updateSwapDetails(fromAmount, toAmount) {
     const priceImpact = document.querySelector('.detail-row:nth-child(3) span:last-child');
     
     if (exchangeRate) {
-        const rate = (toAmount / fromAmount).toFixed(4);
+        let rate;
+        if (isOracleConnected && currentSBTCPrice > 0 && currentBTCPrice > 0) {
+            // Use real Oracle exchange rate
+            rate = (currentSBTCPrice / currentBTCPrice).toFixed(4);
+        } else {
+            // Fallback to calculated rate
+            rate = (toAmount / fromAmount).toFixed(4);
+        }
         exchangeRate.textContent = `1 zBTC = ${rate} SBTC`;
     }
     
@@ -117,8 +217,18 @@ function updateSwapDetails(fromAmount, toAmount) {
     }
     
     if (priceImpact) {
-        // Simulate price impact (would be calculated from liquidity in real app)
-        const impact = (Math.random() * 0.1).toFixed(2);
+        // Calculate price impact based on Oracle data
+        let impact = 0;
+        if (isOracleConnected && currentSBTCPrice > 0) {
+            // Simulate price impact based on trade size vs Oracle price
+            const tradeValue = fromAmount * currentBTCPrice;
+            const impactFactor = Math.min(tradeValue / 10000, 0.1); // Max 10% impact
+            impact = (impactFactor * 100).toFixed(2);
+        } else {
+            // Fallback simulation
+            impact = (Math.random() * 0.1).toFixed(2);
+        }
+        
         priceImpact.textContent = `${impact}%`;
         priceImpact.className = parseFloat(impact) < 0.05 ? 'positive' : '';
     }
@@ -308,27 +418,29 @@ function updateTokenBalances() {
 // Initialize balances on page load
 document.addEventListener('DOMContentLoaded', () => {
     updateTokenBalances();
+    
+    // Initialize Oracle connection
+    initializeOracle();
 });
 
-// Price ticker simulation
+// Price ticker simulation (fallback when Oracle is not available)
 function updatePriceTicker() {
     const priceElement = document.querySelector('.stat-number');
-    if (priceElement) {
-        // Simulate price fluctuation around $1.00
-        const basePrice = 1.00;
-        const fluctuation = (Math.random() - 0.5) * 0.02; // ±1% fluctuation
-        const newPrice = (basePrice + fluctuation).toFixed(4);
+    if (priceElement && !isOracleConnected) {
+        // Simulate price fluctuation around $46,257.62 (realistic BTC price)
+        const basePrice = 46257.62;
+        const fluctuation = (Math.random() - 0.5) * 1000; // ±$500 fluctuation
+        const newPrice = (basePrice + fluctuation).toFixed(2);
         priceElement.textContent = `$${newPrice}`;
     }
 }
 
-// Update price every 5 seconds
-setInterval(updatePriceTicker, 5000);
-
-// Initialize price on load
-document.addEventListener('DOMContentLoaded', () => {
-    updatePriceTicker();
-});
+// Update price every 5 seconds (only if Oracle is not connected)
+setInterval(() => {
+    if (!isOracleConnected) {
+        updatePriceTicker();
+    }
+}, 5000);
 
 // Add loading states for better UX
 function addLoadingState(element, text = 'Loading...') {

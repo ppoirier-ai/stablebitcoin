@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle Test - StableBitcoin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>StableBitcoin Oracle Test</h1>
+        <p>This page tests the Oracle integration with Solana DevNet.</p>
+        
+        <div class="test-section">
+            <h3>1. Oracle Connection Test</h3>
+            <button class="test-button" onclick="testConnection()">Test Connection</button>
+            <div id="connectionResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. SBTC Price Test</h3>
+            <button class="test-button" onclick="testSBTCPrice()">Get SBTC Price</button>
+            <div id="sbtcResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. Bitcoin Price Test</h3>
+            <button class="test-button" onclick="testBTCPrice()">Get BTC Price</button>
+            <div id="btcResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. Full Price Data Test</h3>
+            <button class="test-button" onclick="testFullData()">Get All Price Data</button>
+            <div id="fullResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>5. Network Status Test</h3>
+            <button class="test-button" onclick="testNetworkStatus()">Get Network Status</button>
+            <div id="networkResult" class="result"></div>
+        </div>
+    </div>
+
+    <script src="oracle-browser.js"></script>
+    <script>
+        window.testConnection = async function() {
+            const resultDiv = document.getElementById('connectionResult');
+            resultDiv.textContent = 'Testing connection...';
+            resultDiv.className = 'result';
+            
+            try {
+                await oracle.initialize();
+                resultDiv.textContent = '✅ Connection successful!\nOracle initialized and ready.';
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.textContent = '❌ Connection failed:\n' + error.message;
+                resultDiv.className = 'result error';
+            }
+        };
+        
+        window.testSBTCPrice = async function() {
+            const resultDiv = document.getElementById('sbtcResult');
+            resultDiv.textContent = 'Fetching SBTC price...';
+            resultDiv.className = 'result';
+            
+            try {
+                const result = await oracle.getCurrentSBTCPrice();
+                if (result.success) {
+                    resultDiv.textContent = '✅ SBTC Price Data:\n' + JSON.stringify(result.data, null, 2);
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = '❌ Failed to get SBTC price:\n' + result.error;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = '❌ Error:\n' + error.message;
+                resultDiv.className = 'result error';
+            }
+        };
+        
+        window.testBTCPrice = async function() {
+            const resultDiv = document.getElementById('btcResult');
+            resultDiv.textContent = 'Fetching BTC price...';
+            resultDiv.className = 'result';
+            
+            try {
+                const result = await oracle.getCurrentBitcoinPrice();
+                if (result.success) {
+                    resultDiv.textContent = '✅ BTC Price Data:\n' + JSON.stringify(result.data, null, 2);
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = '❌ Failed to get BTC price:\n' + result.error;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = '❌ Error:\n' + error.message;
+                resultDiv.className = 'result error';
+            }
+        };
+        
+        window.testFullData = async function() {
+            const resultDiv = document.getElementById('fullResult');
+            resultDiv.textContent = 'Fetching all price data...';
+            resultDiv.className = 'result';
+            
+            try {
+                const result = await oracle.getPriceData();
+                if (result.success) {
+                    resultDiv.textContent = '✅ Full Price Data:\n' + JSON.stringify(result.data, null, 2);
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = '❌ Failed to get price data:\n' + JSON.stringify(result.errors, null, 2);
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = '❌ Error:\n' + error.message;
+                resultDiv.className = 'result error';
+            }
+        };
+        
+        window.testNetworkStatus = async function() {
+            const resultDiv = document.getElementById('networkResult');
+            resultDiv.textContent = 'Checking network status...';
+            resultDiv.className = 'result';
+            
+            try {
+                const status = await oracle.getNetworkStatus();
+                if (status.connected) {
+                    resultDiv.textContent = '✅ Network Status:\n' + JSON.stringify(status, null, 2);
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = '❌ Network disconnected:\n' + status.error;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = '❌ Error:\n' + error.message;
+                resultDiv.className = 'result error';
+            }
+        };
+    </script>
+</body>
+</html>
