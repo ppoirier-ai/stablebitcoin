@@ -87,11 +87,15 @@
                 resultDiv.textContent = 'Test 2: Fetching SBTC price...';
                 try {
                     const sbtcResult = await oracle.getCurrentSBTCPrice();
-                    if (sbtcResult.success) {
-                        results.push(`✅ Test 2: SBTC Price - $${sbtcResult.data.sbtc_target_price} (${sbtcResult.data.data_source})`);
-                    } else {
-                        results.push('❌ Test 2: SBTC Price failed - ' + sbtcResult.error);
-                    }
+                if (sbtcResult.success) {
+                    const formattedPrice = sbtcResult.data.sbtc_target_price.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    results.push(`✅ Test 2: SBTC Price - $${formattedPrice} (${sbtcResult.data.data_source})`);
+                } else {
+                    results.push('❌ Test 2: SBTC Price failed - ' + sbtcResult.error);
+                }
                 } catch (error) {
                     results.push('❌ Test 2: SBTC Price error - ' + error.message);
                 }
@@ -100,11 +104,15 @@
                 resultDiv.textContent = 'Test 3: Fetching BTC price...';
                 try {
                     const btcResult = await oracle.getCurrentBitcoinPrice();
-                    if (btcResult.success) {
-                        results.push(`✅ Test 3: BTC Price - $${btcResult.data.btc_price} (${btcResult.data.data_source})`);
-                    } else {
-                        results.push('❌ Test 3: BTC Price failed - ' + btcResult.error);
-                    }
+                if (btcResult.success) {
+                    const formattedPrice = btcResult.data.btc_price.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    results.push(`✅ Test 3: BTC Price - $${formattedPrice} (${btcResult.data.data_source})`);
+                } else {
+                    results.push('❌ Test 3: BTC Price failed - ' + btcResult.error);
+                }
                 } catch (error) {
                     results.push('❌ Test 3: BTC Price error - ' + error.message);
                 }
@@ -115,8 +123,19 @@
                     const fullResult = await oracle.getPriceData();
                     if (fullResult.success) {
                         results.push(`✅ Test 4: Full data retrieved successfully`);
-                        results.push(`   SBTC: $${fullResult.data.sbtc.sbtc_target_price}`);
-                        results.push(`   BTC: $${fullResult.data.btc.btc_price}`);
+                        
+                        const formattedSBTC = fullResult.data.sbtc.sbtc_target_price.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        
+                        const formattedBTC = fullResult.data.btc.btc_price.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        
+                        results.push(`   SBTC: $${formattedSBTC}`);
+                        results.push(`   BTC: $${formattedBTC}`);
                     } else {
                         results.push('❌ Test 4: Full data failed - ' + JSON.stringify(fullResult.errors));
                     }

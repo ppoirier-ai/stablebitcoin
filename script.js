@@ -1,4 +1,5 @@
 // Oracle module is loaded via script tag in HTML
+// Wallet module is loaded via script tag in HTML
 
 // DOM Elements
 const hamburger = document.querySelector('.hamburger');
@@ -7,7 +8,7 @@ const swapTokensBtn = document.getElementById('swapTokens');
 const fromAmountInput = document.getElementById('fromAmount');
 const toAmountInput = document.getElementById('toAmount');
 const swapSubmitBtn = document.getElementById('swapSubmit');
-const connectWalletBtn = document.querySelector('.connect-wallet-btn');
+const connectWalletBtn = document.getElementById('connectWalletBtn');
 
 // Price display elements
 const sbtcPriceElement = document.querySelector('.stat-number');
@@ -16,6 +17,134 @@ const sbtcPriceElement = document.querySelector('.stat-number');
 let currentSBTCPrice = 0;
 let currentBTCPrice = 0;
 let isOracleConnected = false;
+
+// Wallet state
+let isWalletConnected = false;
+let walletAddress = null;
+
+// Wallet Integration Functions
+async function initializeWallet() {
+    try {
+        console.log('Initializing wallet...');
+        const success = await phantomWallet.initialize();
+        
+        if (success) {
+            console.log('Wallet initialized successfully');
+            
+            // Add wallet state listener
+            phantomWallet.addListener(handleWalletStateChange);
+            
+            // Update UI based on current state
+            updateWalletUI();
+        } else {
+            console.warn('Wallet not available');
+            updateWalletUI();
+        }
+    } catch (error) {
+        console.error('Wallet initialization failed:', error);
+        updateWalletUI();
+    }
+}
+
+function handleWalletStateChange(status) {
+    console.log('Wallet state changed:', status);
+    isWalletConnected = status.connected;
+    walletAddress = status.address;
+    updateWalletUI();
+}
+
+function updateWalletUI() {
+    if (!connectWalletBtn) return;
+    
+    const status = phantomWallet.getStatus();
+    
+    if (status.connected && status.address) {
+        // Wallet is connected
+        connectWalletBtn.innerHTML = `
+            <i class="fas fa-wallet"></i>
+            <span>${phantomWallet.formatAddress(status.address)}</span>
+        `;
+        connectWalletBtn.classList.add('connected');
+        connectWalletBtn.onclick = handleDisconnectWallet;
+        
+        showNotification(`Wallet connected: ${phantomWallet.formatAddress(status.address)}`, 'success');
+    } else if (phantomWallet.isAvailable()) {
+        // Wallet is available but not connected
+        connectWalletBtn.innerHTML = `
+            <i class="fas fa-wallet"></i>
+            <span>Connect Wallet</span>
+        `;
+        connectWalletBtn.classList.remove('connected');
+        connectWalletBtn.onclick = handleConnectWallet;
+    } else {
+        // Wallet not available
+        connectWalletBtn.innerHTML = `
+            <i class="fas fa-download"></i>
+            <span>Install Phantom</span>
+        `;
+        connectWalletBtn.classList.remove('connected');
+        connectWalletBtn.onclick = handleInstallWallet;
+    }
+}
+
+async function handleConnectWallet() {
+    try {
+        setWalletButtonLoading(true);
+        
+        const result = await phantomWallet.connect();
+        
+        if (result.success) {
+            showNotification('Wallet connected successfully!', 'success');
+        } else {
+            showNotification(`Connection failed: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        console.error('Wallet connection error:', error);
+        showNotification('Wallet connection failed', 'error');
+    } finally {
+        setWalletButtonLoading(false);
+    }
+}
+
+async function handleDisconnectWallet() {
+    try {
+        setWalletButtonLoading(true);
+        
+        const result = await phantomWallet.disconnect();
+        
+        if (result.success) {
+            showNotification('Wallet disconnected successfully', 'info');
+        } else {
+            showNotification(`Disconnect failed: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        console.error('Wallet disconnection error:', error);
+        showNotification('Wallet disconnection failed', 'error');
+    } finally {
+        setWalletButtonLoading(false);
+    }
+}
+
+function handleInstallWallet() {
+    const installUrl = phantomWallet.getInstallUrl();
+    window.open(installUrl, '_blank');
+    showNotification('Please install Phantom wallet and refresh the page', 'info');
+}
+
+function setWalletButtonLoading(loading) {
+    if (!connectWalletBtn) return;
+    
+    if (loading) {
+        connectWalletBtn.disabled = true;
+        connectWalletBtn.innerHTML = `
+            <i class="fas fa-spinner spinner"></i>
+            <span>Loading...</span>
+        `;
+    } else {
+        connectWalletBtn.disabled = false;
+        updateWalletUI();
+    }
+}
 
 // Oracle Integration Functions
 async function initializeOracle() {
@@ -213,7 +342,14 @@ function updateSwapDetails(fromAmount, toAmount) {
         // 0.5% slippage
         const slippage = 0.005;
         const minimum = toAmount * (1 - slippage);
-        minimumReceived.textContent = `${minimum.toFixed(6)} SBTC`;
+        
+        // Format with commas for better readability
+        const formattedMinimum = minimum.toLocaleString('en-US', {
+            minimumFractionDigits: 6,
+            maximumFractionDigits: 6
+        });
+        
+        minimumReceived.textContent = `${formattedMinimum} SBTC`;
     }
     
     if (priceImpact) {
@@ -241,6 +377,12 @@ swapSubmitBtn.addEventListener('click', () => {
     
     if (!fromAmount || !toAmount) {
         showNotification('Please enter amounts to swap', 'error');
+        return;
+    }
+    
+    // Check if wallet is connected
+    if (!isWalletConnected) {
+        showNotification('Please connect your wallet to perform swaps', 'error');
         return;
     }
     
@@ -278,18 +420,6 @@ function resetSwapDetails() {
     }
 }
 
-// Connect wallet functionality
-connectWalletBtn.addEventListener('click', () => {
-    // Simulate wallet connection
-    connectWalletBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
-    connectWalletBtn.disabled = true;
-    
-    setTimeout(() => {
-        connectWalletBtn.innerHTML = '<i class="fas fa-wallet"></i> 0x1234...5678';
-        connectWalletBtn.disabled = false;
-        showNotification('Wallet connected successfully!', 'success');
-    }, 1500);
-});
 
 // Notification system
 function showNotification(message, type = 'info') {
@@ -404,14 +534,25 @@ function updateTokenBalances() {
     const toBalance = document.querySelector('#toAmount').parentElement.querySelector('.token-symbol').parentElement.parentElement.querySelector('.balance');
     
     // Simulate random balances
-    const zBTCBalance = (Math.random() * 10).toFixed(2);
-    const sBTCBalance = (Math.random() * 10).toFixed(2);
+    const zBTCBalance = Math.random() * 10;
+    const sBTCBalance = Math.random() * 10;
+    
+    // Format with commas
+    const formattedZBTC = zBTCBalance.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    
+    const formattedSBTC = sBTCBalance.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
     
     if (fromBalance) {
-        fromBalance.textContent = `Balance: ${zBTCBalance} zBTC`;
+        fromBalance.textContent = `Balance: ${formattedZBTC} zBTC`;
     }
     if (toBalance) {
-        toBalance.textContent = `Balance: ${sBTCBalance} SBTC`;
+        toBalance.textContent = `Balance: ${formattedSBTC} SBTC`;
     }
 }
 
@@ -421,6 +562,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize Oracle connection
     initializeOracle();
+    
+    // Initialize wallet connection
+    initializeWallet();
 });
 
 // Price ticker simulation (fallback when Oracle is not available)
@@ -430,8 +574,15 @@ function updatePriceTicker() {
         // Simulate price fluctuation around $46,257.62 (realistic BTC price)
         const basePrice = 46257.62;
         const fluctuation = (Math.random() - 0.5) * 1000; // ±$500 fluctuation
-        const newPrice = (basePrice + fluctuation).toFixed(2);
-        priceElement.textContent = `$${newPrice}`;
+        const newPrice = basePrice + fluctuation;
+        
+        // Format with commas
+        const formattedPrice = newPrice.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        
+        priceElement.textContent = `$${formattedPrice}`;
     }
 }
 

@@ -280,13 +280,20 @@ class StableBitcoinOracle {
     }
 
     /**
-     * Format price for display
+     * Format price for display with commas
      */
     formatPrice(price, decimals = 2) {
         if (typeof price !== 'number' || isNaN(price)) {
             return '0.00';
         }
-        return price.toFixed(decimals);
+        
+        // Format with commas for thousands separators
+        const formatted = price.toLocaleString('en-US', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+        
+        return formatted;
     }
 
     /**
