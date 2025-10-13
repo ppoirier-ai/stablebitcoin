@@ -5,18 +5,26 @@
 
 // Oracle Configuration
 const ORACLE_CONFIG = {
-    // Solana DevNet RPC endpoint (use environment variable if available)
-    RPC_URL: typeof process !== 'undefined' && process.env?.ORACLE_RPC_URL || 'https://api.devnet.solana.com',
-    
-    // Program ID for the SMA Oracle (use environment variable if available)
-    PROGRAM_ID: typeof process !== 'undefined' && process.env?.ORACLE_PROGRAM_ID || 'FtDpp1TsamUskkz2AS7NTuRGqyB3j4dpP7mj9ATHbDoa',
-    
-    // Pyth Network BTC/USD Price Feed ID (use environment variable if available)
-    PYTH_PRICE_FEED: typeof process !== 'undefined' && process.env?.PYTH_PRICE_FEED || '8SXvChNYFh3qEi4J6tK1wQREu5x6YdE3C6HmZzThoG6E',
-    
-    // Oracle state account (this would be derived from the program)
-    ORACLE_STATE_ACCOUNT: typeof process !== 'undefined' && process.env?.ORACLE_PROGRAM_ID || 'FtDpp1TsamUskkz2AS7NTuRGqyB3j4dpP7mj9ATHbDoa'
+    RPC_URL: 'https://api.devnet.solana.com',
+    PROGRAM_ID: '8UDq3zAd8RqqkVVpCS8bRbRuWUQyDD6ioVVmtYtUCy6y',
+    PYTH_PRICE_FEED: '0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
+    ORACLE_STATE_ACCOUNT: 'n6vZ3Uczer7nG5MLMed9CdYZajeFhzKHRCQyuAcuhuK'
 };
+
+// Browser-compatible Buffer replacement
+class BrowserBuffer {
+    static from(data, encoding) {
+        if (encoding === 'base64') {
+            const binaryString = atob(data);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes;
+        }
+        throw new Error('Unsupported encoding');
+    }
+}
 
 class StableBitcoinOracle {
     constructor() {
@@ -89,7 +97,7 @@ class StableBitcoinOracle {
             }
 
             return {
-                data: Buffer.from(result.value.data[0], 'base64'),
+                data: BrowserBuffer.from(result.value.data[0], 'base64'),
                 owner: result.value.owner,
                 lamports: result.value.lamports,
                 executable: result.value.executable
@@ -104,127 +112,104 @@ class StableBitcoinOracle {
      * Get current SBTC target price from the Oracle
      */
     async getCurrentSBTCPrice() {
-        if (!this.isInitialized) {
-            await this.initialize();
+    if (!this.isInitialized) {
+        await this.initialize();
+    }
+
+    try {
+        const accountInfo = await this.getAccountInfo(this.oracleStateAccount);
+
+        if (!accountInfo) {
+        console.warn('Oracle state account not found, using simulated price');
+        return this.getFallbackSBTCPrice();
         }
 
-        try {
-            // Query the Oracle state account to get current SBTC target price
-            const accountInfo = await this.getAccountInfo(this.oracleStateAccount);
-            
-            if (!accountInfo) {
-                // For now, return a simulated price since the Oracle program might not be deployed yet
-                console.warn('Oracle state account not found, using simulated price');
-                const simulatedPrice = 46257.62; // Simulated BTC price
-                return {
-                    success: true,
-                    data: {
-                        sbtc_target_price: simulatedPrice,
-                        sbtc_scaled_cents: Math.round(simulatedPrice * 100),
-                        timestamp: Date.now(),
-                        data_source: 'Simulated (Oracle not deployed)',
-                        program_id: ORACLE_CONFIG.PROGRAM_ID
-                    }
-                };
-            }
-
-            // Parse the account data to extract SBTC target price
-            const data = accountInfo.data;
-            
-            if (data.length < 8) {
-                throw new Error('Invalid account data length');
-            }
-            
-            // Assuming the SBTC target price is stored as a u64 at offset 0
-            const sbtcTargetPrice = data.readBigUInt64LE(0);
-            const sbtcPriceInCents = Number(sbtcTargetPrice);
-            const sbtcPriceInDollars = sbtcPriceInCents / 100;
-
-            return {
-                success: true,
-                data: {
-                    sbtc_target_price: sbtcPriceInDollars,
-                    sbtc_scaled_cents: sbtcPriceInCents,
-                    timestamp: Date.now(),
-                    data_source: 'Solana DevNet Oracle',
-                    program_id: ORACLE_CONFIG.PROGRAM_ID
-                }
-            };
-        } catch (error) {
-            console.error('Error fetching SBTC price from Oracle:', error);
-            // Return a fallback price instead of failing completely
-            const fallbackPrice = 46257.62;
-            return {
-                success: true,
-                data: {
-                    sbtc_target_price: fallbackPrice,
-                    sbtc_scaled_cents: Math.round(fallbackPrice * 100),
-                    timestamp: Date.now(),
-                    data_source: 'Fallback (Oracle Error)',
-                    program_id: ORACLE_CONFIG.PROGRAM_ID
-                }
-            };
+        const data = accountInfo.data;
+        if (data.length < 24) {
+        throw new Error(`Invalid OracleState account size: ${data.length}`);
         }
+
+        const dataView = new DataView(data.buffer, data.byteOffset, data.byteLength);
+
+        // Anchor discriminator is first 8 bytes
+        const sbtcTrendValue = dataView.getBigUint64(8, true);        // trend_value
+        const lastUpdate = dataView.getBigInt64(16, true);            // last_update
+
+        const sbtcPriceInCents = Number(sbtcTrendValue);
+        const sbtcPriceInDollars = sbtcPriceInCents / 100;
+
+        return {
+        success: true,
+        data: {
+            sbtc_target_price: sbtcPriceInDollars,
+            sbtc_scaled_cents: sbtcPriceInCents,
+            last_update: Number(lastUpdate),
+            data_source: "Custom sBTC Oracle (Devnet)",
+            program_id: ORACLE_CONFIG.PROGRAM_ID
+        }
+        };
+    } catch (err) {
+        console.error("Failed to load SBTC oracle:", err);
+        return this.getFallbackSBTCPrice(err.message);
+    }
+    }
+
+    getFallbackSBTCPrice(error) {
+    const fallbackPrice = 40000;
+    return {
+        success: true,
+        error,
+        data: {
+        sbtc_target_price: fallbackPrice,
+        sbtc_scaled_cents: fallbackPrice * 100,
+        timestamp: Date.now(),
+        data_source: "Fallback SBTC Oracle"
+        }
+    };
     }
 
     /**
-     * Get current Bitcoin price from Pyth Network
+     * Get current Bitcoin price from Pyth Network with proper parsing
      */
     async getCurrentBitcoinPrice() {
-        try {
-            // Query Pyth Network price feed
-            const accountInfo = await this.getAccountInfo(this.pythPriceFeed);
-            
-            if (!accountInfo) {
-                console.warn('Pyth price feed account not found, using simulated price');
-                const simulatedPrice = 46257.62;
-                return {
-                    success: true,
-                    data: {
-                        btc_price: simulatedPrice,
-                        timestamp: Date.now(),
-                        data_source: 'Simulated (Pyth not available)',
-                        price_feed_id: ORACLE_CONFIG.PYTH_PRICE_FEED
-                    }
-                };
-            }
+    try {
+        const res = await fetch(
+        `https://hermes.pyth.network/v2/updates/price/latest?ids[]=${ORACLE_CONFIG.PYTH_PRICE_FEED}`
+        );
+        const json = await res.json();
+        console.log("Hermes JSON:", json);
 
-            // Parse Pyth price data
-            const data = accountInfo.data;
-            
-            if (data.length < 32) {
-                throw new Error('Invalid Pyth price feed data length');
-            }
-            
-            // Pyth price feed structure (simplified)
-            const price = data.readBigUInt64LE(16); // Price is typically at offset 16
-            const expo = data.readInt32LE(24); // Exponent at offset 24
-            
-            const btcPrice = Number(price) / Math.pow(10, Math.abs(expo));
-            
-            return {
-                success: true,
-                data: {
-                    btc_price: btcPrice,
-                    timestamp: Date.now(),
-                    data_source: 'Pyth Network',
-                    price_feed_id: ORACLE_CONFIG.PYTH_PRICE_FEED
-                }
-            };
-        } catch (error) {
-            console.error('Error fetching Bitcoin price from Pyth:', error);
-            // Return a fallback price instead of failing
-            const fallbackPrice = 46257.62;
-            return {
-                success: true,
-                data: {
-                    btc_price: fallbackPrice,
-                    timestamp: Date.now(),
-                    data_source: 'Fallback (Pyth Error)',
-                    price_feed_id: ORACLE_CONFIG.PYTH_PRICE_FEED
-                }
-            };
+        // Validate response structure
+        if (!json.parsed || !Array.isArray(json.parsed) || json.parsed.length === 0) {
+        throw new Error("Invalid Hermes response: missing parsed price data");
         }
+
+        // Extract Pyth price info
+        const priceInfo = json.parsed[0]?.price;
+        if (!priceInfo) {
+        throw new Error("Hermes response did not include price info");
+        }
+
+        // Convert price using exponent
+        const price = Number(priceInfo.price) * Math.pow(10, priceInfo.expo);
+        console.log("BTC price: ", price);
+
+        return {
+        success: true,
+        data: {
+            btc_price: price,
+            confidence: Number(priceInfo.conf),
+            exponent: priceInfo.expo,
+            timestamp: priceInfo.publish_time,
+            data_source: "Pyth Hermes REST API",
+            feed_id: ORACLE_CONFIG.PYTH_PRICE_FEED
+        }
+        };
+    } catch (err) {
+        console.error("Hermes price fetch failed:", err);
+        console.log("Switching to fallback BTC price...");
+        return this.getFallbackBtcPrice(err.message);
+    }
     }
 
     /**
@@ -322,8 +307,6 @@ class StableBitcoinOracle {
 
 // Create singleton instance
 const oracle = new StableBitcoinOracle();
-
-// Make it available globally for the test page
 window.oracle = oracle;
 window.StableBitcoinOracle = StableBitcoinOracle;
 window.ORACLE_CONFIG = ORACLE_CONFIG;

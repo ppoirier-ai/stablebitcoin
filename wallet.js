@@ -188,23 +188,16 @@ class PhantomWallet {
      * Sign a transaction
      */
     async signTransaction(transaction) {
-        try {
-            if (!this.connected || !this.wallet) {
-                throw new Error('Wallet not connected');
-            }
+    if (!this.connected || !this.wallet) throw new Error('Wallet not connected');
+    const signedTransaction = await this.wallet.signTransaction(transaction);
+    return signedTransaction; // <-- return the Transaction directly
+    }
 
-            const signedTransaction = await this.wallet.signTransaction(transaction);
-            return {
-                success: true,
-                transaction: signedTransaction
-            };
-        } catch (error) {
-            console.error('Error signing transaction:', error);
-            return {
-                success: false,
-                error: error.message
-            };
-        }
+    // BEFORE (WRONG): returns { success: true, transactions }
+    async signAllTransactions(transactions) {
+    if (!this.connected || !this.wallet) throw new Error('Wallet not connected');
+    const signedTransactions = await this.wallet.signAllTransactions(transactions);
+    return signedTransactions; // <-- return Transaction[]
     }
 
     /**

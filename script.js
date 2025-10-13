@@ -51,6 +51,11 @@ function handleWalletStateChange(status) {
     isWalletConnected = status.connected;
     walletAddress = status.address;
     updateWalletUI();
+
+    // Initialize program when wallet connects
+    if (status.connected) {
+        initializeSwapProgram();
+    }
 }
 
 function updateWalletUI() {
@@ -84,6 +89,18 @@ function updateWalletUI() {
         `;
         connectWalletBtn.classList.remove('connected');
         connectWalletBtn.onclick = handleInstallWallet;
+    }
+}
+
+// Initialize swap program when wallet connects
+async function initializeSwapProgram() {
+    try {
+        await otcSwapProgram.initialize();
+        await updateRealBalances();
+        showNotification('Swap program connected!', 'success');
+    } catch (error) {
+        console.error('Failed to initialize swap program:', error);
+        showNotification('Swap program not available', 'error');
     }
 }
 
@@ -218,8 +235,6 @@ function updatePriceDisplay() {
         sbtcPriceElement.textContent = `$${formattedPrice}`;
     }
 }
-
-
 
 // Mobile Navigation Toggle
 hamburger.addEventListener('click', () => {
@@ -371,55 +386,71 @@ function updateSwapDetails(fromAmount, toAmount) {
 }
 
 // Swap submission
-swapSubmitBtn.addEventListener('click', () => {
+swapSubmitBtn.addEventListener('click', async () => {
     const fromAmount = fromAmountInput.value;
-    const toAmount = toAmountInput.value;
     
-    if (!fromAmount || !toAmount) {
-        showNotification('Please enter amounts to swap', 'error');
+    if (!fromAmount) {
+        showNotification('Please enter amount to swap', 'error');
         return;
     }
     
-    // Check if wallet is connected
     if (!isWalletConnected) {
         showNotification('Please connect your wallet to perform swaps', 'error');
         return;
     }
-    
-    // Simulate swap process
-    swapSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    swapSubmitBtn.disabled = true;
-    
-    // Simulate API call delay
-    setTimeout(() => {
-        showNotification('Swap completed successfully!', 'success');
+
+    try {
+        // Initialize program if not already done
+        if (!otcSwapProgram.isInitialized) {
+            await otcSwapProgram.initialize();
+        }
+
+        // Show loading state
+        const restoreButton = addLoadingState(swapSubmitBtn, 'Processing...');
+
+        // Perform the swap
+        const amount = Math.floor(parseFloat(fromAmount) * 1e8); // Convert to minor units
+        const result = await otcSwapProgram.mintSbtc(amount);
+
+        if (result.success) {
+            showNotification('Swap completed successfully!', 'success');
+            
+            // Reset form
+            fromAmountInput.value = '';
+            toAmountInput.value = '';
+            
+            // Update balances
+            await updateRealBalances();
+        } else {
+            showNotification(`Swap failed: ${result.error}`, 'error');
+        }
+
+        restoreButton();
         
-        // Reset form
-        fromAmountInput.value = '';
-        toAmountInput.value = '';
-        swapSubmitBtn.innerHTML = '<i class="fas fa-exchange-alt"></i> Swap zBTC for SBTC';
-        swapSubmitBtn.disabled = true;
-        swapSubmitBtn.style.opacity = '0.6';
-        
-        // Reset swap details
-        resetSwapDetails();
-    }, 2000);
+    } catch (error) {
+        console.error('Swap error:', error);
+        showNotification('Swap failed. Please try again.', 'error');
+        handleSwapError(error);
+    }
 });
 
-// Reset swap details
-function resetSwapDetails() {
-    const exchangeRate = document.querySelector('.detail-row:nth-child(1) span:last-child');
-    const minimumReceived = document.querySelector('.detail-row:nth-child(2) span:last-child');
-    const priceImpact = document.querySelector('.detail-row:nth-child(3) span:last-child');
-    
-    if (exchangeRate) exchangeRate.textContent = '1 zBTC = 1.00 SBTC';
-    if (minimumReceived) minimumReceived.textContent = '0.00 SBTC';
-    if (priceImpact) {
-        priceImpact.textContent = '0.00%';
-        priceImpact.className = 'positive';
+// Add function to update real balances
+async function updateRealBalances() {
+    if (otcSwapProgram.isInitialized) {
+        const balances = await otcSwapProgram.getUserBalances();
+
+        // ✅ Select the zBTC + sBTC balance fields properly
+        const zbtcBalanceEl = document.querySelector('#swap .token-input:first-of-type .balance');
+        const sbtcBalanceEl = document.querySelector('#swap .token-input:last-of-type .balance');
+
+        if (zbtcBalanceEl) {
+            zbtcBalanceEl.textContent = `Balance: ${balances.zbtc.toFixed(8)} zBTC`;
+        }
+        if (sbtcBalanceEl) {
+            sbtcBalanceEl.textContent = `Balance: ${balances.sbtc.toFixed(8)} SBTC`;
+        }
     }
 }
-
 
 // Notification system
 function showNotification(message, type = 'info') {

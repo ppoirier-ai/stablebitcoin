@@ -355,8 +355,19 @@
         </div>
     </footer>
 
-    <script src="oracle-browser.js"></script>
-    <script src="wallet.js"></script>
-    <script src="script.js"></script>
+<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+
+<!-- Load Anchor as ESM (must be a module script) -->
+<script type="module">
+  import * as anchor from "https://esm.sh/@coral-xyz/anchor@0.31.1";
+  window.anchor = anchor;
+</script>
+
+<script src="oracle-browser.js"></script>
+<script src="wallet.js"></script>
+<script src="idl.js"></script> <!-- Load static IDL -->
+<script src="idl-debug.js"></script>
+<script src="swap-program.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
