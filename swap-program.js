@@ -9,26 +9,6 @@ class OtcSwapProgram {
         this.connection = null;
         this.provider = null;
         this.isInitialized = false;
-        
-        // Program Configuration
-        this.config = {
-            PROGRAM_ID: 'DBHmndyfN4j7BtQsLaCR1SPd7iAXaf1ezUicDs3pUXS8',
-
-            // PDA addresses (these should match your program)
-            CONFIG_SEED: 'config_v1',
-            SBTC_MINT_AUTHORITY_SEED: 'sbtc_mint_authority',
-            TREASURY_AUTH_SEED: 'treasury_auth_v1',
-            FEE_AUTH_SEED: 'fee_auth_v1',
-
-            // Oracle addresses
-            PYTH_BTC_USD_FEED: 'HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J',
-
-            // Token mints (you'll need to set these)
-            SBTC_MINT: '7dMm9RgrkknPkrp7n1sgkbJFPkG5pAZzEs32NcyjeDkW', // Set after deployment
-            ZBTC_MINT: '91AgzqSfXnCq6AJm5CPPHL3paB25difEJ1TfSnrFKrf', // Set after deployment
-
-            ORACLE_STATE_ACCOUNT: 'n6vZ3Uczer7nG5MLMed9CdYZajeFhzKHRCQyuAcuhuK',
-        };
     }
 
     async initialize() {
@@ -56,6 +36,28 @@ class OtcSwapProgram {
 
             anchor.setProvider(this.provider);
 
+            // Program Configuration
+            this.config = {
+                SWAP_PROGRAM_ID: new anchor.web3.PublicKey("DBHmndyfN4j7BtQsLaCR1SPd7iAXaf1ezUicDs3pUXS8"),
+                ORACLE_PROGRAM_ID: new anchor.web3.PublicKey("8UDq3zAd8RqqkVVpCS8bRbRuWUQyDD6ioVVmtYtUCy6y"),
+
+                SQUAD_MULTISIG: new anchor.web3.PublicKey("5eWBQxV7BZSVA4FqDfxQEZRFr67LZkCy9JNkoX2Q4Q5b"),
+
+                CONFIG_SEED: "config_v1",
+                SBTC_MINT_AUTHORITY_SEED: "sbtc_mint_authority",
+                TREASURY_AUTH_SEED: "treasury_auth_v1",
+                FEE_AUTH_SEED: "fee_auth_v1",
+                ORACLE_STATE_SEED: "oracle",
+
+                PYTH_BTC_USD_FEED: new anchor.web3.PublicKey("HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"),
+
+                SBTC_MINT: new anchor.web3.PublicKey("7dMm9RgrkknPkrp7n1sgkbJFPkG5pAZzEs32NcyjeDkW"),
+                ZBTC_MINT: new anchor.web3.PublicKey("91AgzqSfXnCq6AJm5CPPHL3paB25difEJ1TfSnrFKrf"),
+
+                TREASURY_ZBTC_VAULT: new anchor.web3.PublicKey("FkECS4C9g9xHDCSacUf1cpZ3MEvquxuD9yb9Ao4asES8"),
+                FEE_VAULT: new anchor.web3.PublicKey("DauXPgtQevwJxavMpzH5Zkx3sH7BDuwrZBP5BsYskqgV"),
+            };
+
             if (!window.otcSwapIdl) {
                 throw new Error("❌ Static IDL 'window.otcSwapIdl' was not loaded");
             }
@@ -63,7 +65,7 @@ class OtcSwapProgram {
             console.log("✅ Raw IDL loaded: ", window.otcSwapIdl);
 
             // ✅ Program ID
-            const programId = new anchor.web3.PublicKey(this.config.PROGRAM_ID);
+            const programId = new anchor.web3.PublicKey(this.config.SWAP_PROGRAM_ID);
             console.log("✅ Using Program ID:", programId.toString());
 
             // ---- 🚀 Create Program safely ----
@@ -81,7 +83,7 @@ class OtcSwapProgram {
 
         } catch (error) {
             console.error("🔥 Failed to initialize OTC Swap Program:", error);
-            console.error("Debug hint: Check config PROGRAM_ID and IDL format.");
+            console.error("Debug hint: Check config SWAP_PROGRAM_ID and IDL format.");
             throw error;
         }
     }
@@ -90,49 +92,51 @@ class OtcSwapProgram {
      * Derive all necessary PDAs
      */
     async derivePdas() {
-        const adminPublicKey = phantomWallet.publicKey; // Using connected wallet as admin for now
-
-        // Config PDA
         [this.configPda] = await anchor.web3.PublicKey.findProgramAddress(
             [
                 anchor.utils.bytes.utf8.encode(this.config.CONFIG_SEED),
-                adminPublicKey.toBuffer()
+                this.config.SQUAD_MULTISIG.toBuffer(),
             ],
             this.program.programId
         );
 
-        // SBTC Mint Authority PDA
         [this.sbtcMintAuthorityPda] = await anchor.web3.PublicKey.findProgramAddress(
             [
                 anchor.utils.bytes.utf8.encode(this.config.SBTC_MINT_AUTHORITY_SEED),
-                adminPublicKey.toBuffer()
+                this.config.SQUAD_MULTISIG.toBuffer(),
             ],
             this.program.programId
         );
 
-        // Treasury Authority PDA
         [this.treasuryAuthorityPda] = await anchor.web3.PublicKey.findProgramAddress(
             [
                 anchor.utils.bytes.utf8.encode(this.config.TREASURY_AUTH_SEED),
-                adminPublicKey.toBuffer()
+                this.config.SQUAD_MULTISIG.toBuffer(),
             ],
             this.program.programId
         );
 
-        // Fee Authority PDA
         [this.feeAuthorityPda] = await anchor.web3.PublicKey.findProgramAddress(
             [
                 anchor.utils.bytes.utf8.encode(this.config.FEE_AUTH_SEED),
-                adminPublicKey.toBuffer()
+                this.config.SQUAD_MULTISIG.toBuffer(),
             ],
             this.program.programId
         );
+
+        [this.oracleStatePda] = await anchor.web3.PublicKey.findProgramAddress(
+            [
+                anchor.utils.bytes.utf8.encode(this.config.ORACLE_STATE_SEED),
+            ],
+            this.config.ORACLE_PROGRAM_ID,
+        )
 
         console.log('PDAs derived:', {
             config: this.configPda.toString(),
             sbtcMintAuthority: this.sbtcMintAuthorityPda.toString(),
             treasuryAuthority: this.treasuryAuthorityPda.toString(),
-            feeAuthority: this.feeAuthorityPda.toString()
+            feeAuthority: this.feeAuthorityPda.toString(),
+            oracleState: this.oracleStatePda.toString(),
         });
     }
 
@@ -145,18 +149,14 @@ class OtcSwapProgram {
         try {
             const user = phantomWallet.publicKey;
 
-            const sbtcMint = new anchor.web3.PublicKey(this.config.SBTC_MINT);
-            const zbtcMint = new anchor.web3.PublicKey(this.config.ZBTC_MINT);
-
-            // ✅ Associated Token Account addresses derived correctly
             const sbtcTokenAccount = await anchor.utils.token.associatedAddress({
-                mint: sbtcMint,
-                owner: user
+                mint: this.config.SBTC_MINT,
+                owner: user,
             });
 
             const zbtcTokenAccount = await anchor.utils.token.associatedAddress({
-                mint: zbtcMint,
-                owner: user
+                mint: this.config.ZBTC_MINT,
+                owner: user,
             });
 
             return {
@@ -178,40 +178,29 @@ class OtcSwapProgram {
         try {
             const user = phantomWallet.publicKey;
 
-            const sbtcMint = new anchor.web3.PublicKey(this.config.SBTC_MINT);
-            const zbtcMint = new anchor.web3.PublicKey(this.config.ZBTC_MINT);
-
-            // ✅ Fetch correct squadMultisig from on-chain config
-            // let squadMultisig = await this.getSquadMultisig();
-            // if (typeof squadMultisig==="string") {
-            //     squadMultisig = new anchor.web3.PublicKey(squadMultisig);
-            // }
-            let squadMultisig = new anchor.web3.PublicKey("5eWBQxV7BZSVA4FqDfxQEZRFr67LZkCy9JNkoX2Q4Q5b");
-
             const userTokenAccounts = await this.getUserTokenAccounts();
             console.log(`userSbtcAccount:${userTokenAccounts.sbtc} userzbtcAccount:${userTokenAccounts.zbtc}`);
             const treasuryVault = await this.getTreasuryVault();
             const feeVault = await this.getFeeVault();
             console.log(`treasuryVault:${treasuryVault} feeVault:${feeVault}`);
-            const oracleStatePda = new anchor.web3.PublicKey(this.config.ORACLE_STATE_ACCOUNT);
 
             const tx = await this.program.methods
                 .mintSbtc(new anchor.BN(zbtcAmount))
                 .accounts({
                     user,
-                    squadMultisig,
-                    config: new anchor.web3.PublicKey("M8uCStPutLUYbpP1hbC4SQBLza29jZQECX4DbYwSPUj"), //this.configPda,
-                    zbtcMint: new anchor.web3.PublicKey("91AgzqSfXnCq6AJm5CPPHL3paB25difEJ1TfSnrFKrf"),
-                    sbtcMint: new anchor.web3.PublicKey("7dMm9RgrkknPkrp7n1sgkbJFPkG5pAZzEs32NcyjeDkW"),
+                    squadMultisig: this.config.SQUAD_MULTISIG,
+                    config: this.configPda,
+                    zbtcMint: this.config.ZBTC_MINT,
+                    sbtcMint: this.config.SBTC_MINT,
                     userSbtcAccount: new anchor.web3.PublicKey(userTokenAccounts.sbtc),
                     userZbtcAccount: new anchor.web3.PublicKey(userTokenAccounts.zbtc),
-                    treasuryZbtcVault: new anchor.web3.PublicKey("FkECS4C9g9xHDCSacUf1cpZ3MEvquxuD9yb9Ao4asES8"),
-                    feeVault: new anchor.web3.PublicKey("DauXPgtQevwJxavMpzH5Zkx3sH7BDuwrZBP5BsYskqgV"),
-                    sbtcMintAuthorityPda: new anchor.web3.PublicKey("5RJzxKweQkKxJd5hVYt1jKgddH69nQLhwJZbE2iRibLQ"),
-                    treasuryAuthorityPda: new anchor.web3.PublicKey("AZBRUWrYkVeyRXwQFMyDhDt92nPuiCQFy45pTNb8xzbj"),
-                    feeAuthorityPda: new anchor.web3.PublicKey("GgHQN7jKvB2AVK3tm3RqSf1Ch7B1sr6WfjDue9KGzisx"),
+                    treasuryZbtcVault: this.config.TREASURY_ZBTC_VAULT,
+                    feeVault: this.config.FEE_VAULT,
+                    sbtcMintAuthorityPda: this.sbtcMintAuthorityPda,
+                    treasuryAuthorityPda: this.treasuryAuthorityPda,
+                    feeAuthorityPda: this.feeAuthorityPda,
                     pythPriceAccount: new anchor.web3.PublicKey(this.config.PYTH_BTC_USD_FEED),
-                    oracleState: new anchor.web3.PublicKey("n6vZ3Uczer7nG5MLMed9CdYZajeFhzKHRCQyuAcuhuK"),
+                    oracleState: this.oracleStatePda,
                     tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
                 })
                 .rpc({
@@ -236,34 +225,29 @@ class OtcSwapProgram {
 
         try {
             const user = phantomWallet.publicKey;
-            const sbtcMint = new anchor.web3.PublicKey(this.config.SBTC_MINT);
-            const zbtcMint = new anchor.web3.PublicKey(this.config.ZBTC_MINT);
-            let squadMultisig = new anchor.web3.PublicKey("5eWBQxV7BZSVA4FqDfxQEZRFr67LZkCy9JNkoX2Q4Q5b");
-
-            // await this.ensureAtaExists(zbtcMint, user);
-            // await this.ensureAtaExists(sbtcMint, user);
 
             const userTokenAccounts = await this.getUserTokenAccounts();
+            console.log(`userSbtcAccount:${userTokenAccounts.sbtc} userzbtcAccount:${userTokenAccounts.zbtc}`);
             const treasuryVault = await this.getTreasuryVault();
             const feeVault = await this.getFeeVault();
-            const oracleStatePda = new anchor.web3.PublicKey(this.config.ORACLE_STATE_ACCOUNT);
+            console.log(`treasuryVault:${treasuryVault} feeVault:${feeVault}`);
 
             const tx = await this.program.methods
                 .burnSbtc(new anchor.BN(sbtcAmount))
                 .accounts({
                     user,
-                    squadMultisig,
-                    config: new anchor.web3.PublicKey("M8uCStPutLUYbpP1hbC4SQBLza29jZQECX4DbYwSPUj"),
-                    zbtcMint: new anchor.web3.PublicKey("91AgzqSfXnCq6AJm5CPPHL3paB25difEJ1TfSnrFKrf"),
-                    sbtcMint: new anchor.web3.PublicKey("7dMm9RgrkknPkrp7n1sgkbJFPkG5pAZzEs32NcyjeDkW"),
+                    squadMultisig: this.config.SQUAD_MULTISIG,
+                    config: this.configPda,
+                    zbtcMint: this.config.ZBTC_MINT,
+                    sbtcMint: this.config.SBTC_MINT,
                     userSbtcAccount: new anchor.web3.PublicKey(userTokenAccounts.sbtc),
                     userZbtcAccount: new anchor.web3.PublicKey(userTokenAccounts.zbtc),
-                    treasuryZbtcVault: new anchor.web3.PublicKey("FkECS4C9g9xHDCSacUf1cpZ3MEvquxuD9yb9Ao4asES8"),
-                    feeVault: new anchor.web3.PublicKey("DauXPgtQevwJxavMpzH5Zkx3sH7BDuwrZBP5BsYskqgV"),
-                    treasuryAuthorityPda: new anchor.web3.PublicKey("AZBRUWrYkVeyRXwQFMyDhDt92nPuiCQFy45pTNb8xzbj"),
-                    feeAuthorityPda: new anchor.web3.PublicKey("GgHQN7jKvB2AVK3tm3RqSf1Ch7B1sr6WfjDue9KGzisx"),
+                    treasuryZbtcVault: this.config.TREASURY_ZBTC_VAULT,
+                    feeVault: this.config.FEE_VAULT,
+                    treasuryAuthorityPda: this.treasuryAuthorityPda,
+                    feeAuthorityPda: this.feeAuthorityPda,
                     pythPriceAccount: new anchor.web3.PublicKey(this.config.PYTH_BTC_USD_FEED),
-                    oracleState: new anchor.web3.PublicKey("n6vZ3Uczer7nG5MLMed9CdYZajeFhzKHRCQyuAcuhuK"),
+                    oracleState: this.oracleStatePda,
                     tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
                 })
                 .rpc({
