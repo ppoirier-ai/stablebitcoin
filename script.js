@@ -22,6 +22,11 @@ let isOracleConnected = false;
 let isWalletConnected = false;
 let walletAddress = null;
 
+// Swap functionality
+let isSwapped = false;
+let cachedBalances = { sbtc: 0, zbtc: 0 };
+
+
 // Wallet Integration Functions
 async function initializeWallet() {
     try {
@@ -264,30 +269,26 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// Swap functionality
-let isSwapped = false;
-
-// Swap tokens button functionality
 swapTokensBtn.addEventListener('click', () => {
-    const fromAmount = fromAmountInput.value;
-    const toAmount = toAmountInput.value;
-    
-    // Swap the values
-    fromAmountInput.value = toAmount;
-    toAmountInput.value = fromAmount;
-    
-    // Toggle swap state
-    isSwapped = !isSwapped;
-    
-    // Update token symbols (this would be more complex in a real app)
-    updateTokenDisplay();
-    
-    // Animate the swap button
-    swapTokensBtn.style.transform = 'rotate(180deg)';
-    setTimeout(() => {
-        swapTokensBtn.style.transform = 'rotate(0deg)';
-    }, 300);
+  const fromAmount = fromAmountInput.value;
+  const toAmount   = toAmountInput.value;
+
+  // swap amounts
+  fromAmountInput.value = toAmount;
+  toAmountInput.value   = fromAmount;
+
+  // toggle state
+  isSwapped = !isSwapped;
+
+  // update labels and balances
+  updateTokenDisplay();
+  applyBalancesToUI(); // <-- rebind cached balances to the correct side
+
+  // tiny animation
+  swapTokensBtn.style.transform = 'rotate(180deg)';
+  setTimeout(() => { swapTokensBtn.style.transform = 'rotate(0deg)'; }, 300);
 });
+
 
 // Update token display based on swap state
 function updateTokenDisplay() {
@@ -393,7 +394,7 @@ swapSubmitBtn.addEventListener('click', async () => {
         showNotification('Please enter amount to swap', 'error');
         return;
     }
-    
+
     if (!isWalletConnected) {
         showNotification('Please connect your wallet to perform swaps', 'error');
         return;
@@ -408,25 +409,35 @@ swapSubmitBtn.addEventListener('click', async () => {
         // Show loading state
         const restoreButton = addLoadingState(swapSubmitBtn, 'Processing...');
 
-        // Perform the swap
-        const amount = Math.floor(parseFloat(fromAmount) * 1e8); // Convert to minor units
-        const result = await otcSwapProgram.mintSbtc(amount);
+        // Convert from UI to integer (8 decimals, like BTC style tokens)
+        const amount = Math.floor(parseFloat(fromAmount) * 1e8);
+
+        let result;
+        if (!isSwapped) {
+            // zBTC → SBTC
+            console.log("🔄 Minting SBTC by depositing zBTC");
+            result = await otcSwapProgram.mintSbtc(amount);
+        } else {
+            // SBTC → zBTC
+            console.log("🔄 Burning SBTC to redeem zBTC");
+            result = await otcSwapProgram.burnSbtc(amount);
+        }
 
         if (result.success) {
-            showNotification('Swap completed successfully!', 'success');
-            
+            showNotification('✅ Swap completed successfully!', 'success');
+
             // Reset form
             fromAmountInput.value = '';
             toAmountInput.value = '';
-            
-            // Update balances
+
+            // Refresh balances
             await updateRealBalances();
         } else {
-            showNotification(`Swap failed: ${result.error}`, 'error');
+            showNotification(`❌ Swap failed: ${result.error}`, 'error');
         }
 
         restoreButton();
-        
+
     } catch (error) {
         console.error('Swap error:', error);
         showNotification('Swap failed. Please try again.', 'error');
@@ -434,23 +445,36 @@ swapSubmitBtn.addEventListener('click', async () => {
     }
 });
 
-// Add function to update real balances
+// Fetch fresh balances and apply to the UI based on isSwapped
 async function updateRealBalances() {
-    if (otcSwapProgram.isInitialized) {
-        const balances = await otcSwapProgram.getUserBalances();
+  if (!otcSwapProgram.isInitialized) return;
 
-        // ✅ Select the zBTC + sBTC balance fields properly
-        const zbtcBalanceEl = document.querySelector('#swap .token-input:first-of-type .balance');
-        const sbtcBalanceEl = document.querySelector('#swap .token-input:last-of-type .balance');
-
-        if (zbtcBalanceEl) {
-            zbtcBalanceEl.textContent = `Balance: ${balances.zbtc.toFixed(8)} zBTC`;
-        }
-        if (sbtcBalanceEl) {
-            sbtcBalanceEl.textContent = `Balance: ${balances.sbtc.toFixed(8)} SBTC`;
-        }
-    }
+  try {
+    const balances = await otcSwapProgram.getUserBalances();
+    cachedBalances = balances; // keep latest in memory
+    applyBalancesToUI();
+  } catch (e) {
+    console.error('Failed to fetch balances:', e);
+  }
 }
+
+function applyBalancesToUI() {
+  const fromBalEl = document.querySelector('#swap .token-input:first-of-type .balance');
+  const toBalEl   = document.querySelector('#swap .token-input:last-of-type .balance');
+
+  if (!fromBalEl || !toBalEl) return;
+
+  if (isSwapped) {
+    // From is SBTC, To is zBTC
+    fromBalEl.textContent = `Balance: ${cachedBalances.sbtc.toFixed(8)} SBTC`;
+    toBalEl.textContent   = `Balance: ${cachedBalances.zbtc.toFixed(8)} zBTC`;
+  } else {
+    // From is zBTC, To is SBTC
+    fromBalEl.textContent = `Balance: ${cachedBalances.zbtc.toFixed(8)} zBTC`;
+    toBalEl.textContent   = `Balance: ${cachedBalances.sbtc.toFixed(8)} SBTC`;
+  }
+}
+
 
 // Notification system
 function showNotification(message, type = 'info') {
