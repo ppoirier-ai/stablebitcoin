@@ -7,7 +7,7 @@
 const ORACLE_CONFIG = {
     RPC_URL: 'https://api.devnet.solana.com',
     PROGRAM_ID: '8UDq3zAd8RqqkVVpCS8bRbRuWUQyDD6ioVVmtYtUCy6y',
-    PYTH_PRICE_FEED: '0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
+    PYTH_PRICE_FEED: '0x3d824c7f7c26ed1c85421ecec8c754e6b52d66a4e45de20a9c9ea91de8b396f9',
     ORACLE_STATE_ACCOUNT: 'n6vZ3Uczer7nG5MLMed9CdYZajeFhzKHRCQyuAcuhuK'
 };
 

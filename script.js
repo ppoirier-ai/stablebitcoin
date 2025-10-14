@@ -224,6 +224,7 @@ async function updatePriceData() {
                 if (fromAmountInput.value && toAmountInput.value) {
                     updateSwapDetails(parseFloat(fromAmountInput.value), parseFloat(toAmountInput.value));
                 }
+                updateExchangeRateOnly();
             }
         } else {
             console.error('Failed to fetch price data:', priceData.errors);
@@ -284,24 +285,33 @@ swapTokensBtn.addEventListener('click', () => {
   // update labels and balances
   updateTokenDisplay();
   applyBalancesToUI(); // <-- rebind cached balances to the correct side
+  updateExchangeRateOnly();
 
   // tiny animation
   swapTokensBtn.style.transform = 'rotate(180deg)';
   setTimeout(() => { swapTokensBtn.style.transform = 'rotate(0deg)'; }, 300);
 });
 
-
 // Update token display based on swap state
 function updateTokenDisplay() {
     const fromTokenSymbol = document.querySelector('#fromAmount').parentElement.querySelector('.token-symbol');
     const toTokenSymbol = document.querySelector('#toAmount').parentElement.querySelector('.token-symbol');
+
+    const fromTokenLogo = document.querySelector('#fromAmount').parentElement.querySelector('.token-logo');
+    const toTokenLogo = document.querySelector('#toAmount').parentElement.querySelector('.token-logo');
     
     if (isSwapped) {
         fromTokenSymbol.textContent = 'SBTC';
+        fromTokenLogo.innerHTML = `<img src="public/SBTC Icon.png" alt="SBTC" class="token-icon-small">`;
+
         toTokenSymbol.textContent = 'zBTC';
+        toTokenLogo.innerHTML = `<i class="fab fa-bitcoin"></i>`;
     } else {
         fromTokenSymbol.textContent = 'zBTC';
+        fromTokenLogo.innerHTML = `<i class="fab fa-bitcoin"></i>`;
+
         toTokenSymbol.textContent = 'SBTC';
+        toTokenLogo.innerHTML = `<img src="public/SBTC Icon.png" alt="SBTC" class="token-icon-small">`;
     }
 }
 
@@ -355,7 +365,7 @@ function updateSwapDetails(fromAmount, toAmount) {
     const exchangeRate = document.querySelector('.detail-row:nth-child(1) span:last-child');
     const minimumReceived = document.querySelector('.detail-row:nth-child(2) span:last-child');
     const priceImpact = document.querySelector('.detail-row:nth-child(3) span:last-child');
-    
+
     if (exchangeRate) {
         let rate;
         if (isOracleConnected && currentSBTCPrice > 0 && currentBTCPrice > 0) {
@@ -399,6 +409,31 @@ function updateSwapDetails(fromAmount, toAmount) {
         priceImpact.className = parseFloat(impact) < 0.05 ? 'positive' : '';
     }
 }
+
+function updateExchangeRateOnly() {
+    const exchangeRateField = document.querySelector('.detail-row:nth-child(1) span:last-child');
+
+    if (!exchangeRateField) return;
+
+    if (currentSBTCPrice > 0 && currentBTCPrice > 0) {
+        // Calculate true oracle rate
+        const rate = (currentSBTCPrice / currentBTCPrice).toFixed(4);
+
+        // Respect token direction (flip if swapped)
+        if (!isSwapped) {
+            exchangeRateField.textContent = `1 zBTC = ${rate} SBTC`;
+        } else {
+            const inverseRate = (1 / rate).toFixed(4);
+            exchangeRateField.textContent = `1 SBTC = ${inverseRate} zBTC`;
+        }
+    } else {
+        // Show neutral fallback
+        exchangeRateField.textContent = isSwapped
+            ? `1 SBTC = 1.0000 zBTC`
+            : `1 zBTC = 1.0000 SBTC`;
+    }
+}
+
 
 // Swap submission
 swapSubmitBtn.addEventListener('click', async () => {
