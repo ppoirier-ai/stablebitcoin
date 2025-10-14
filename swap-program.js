@@ -172,57 +172,61 @@ class OtcSwapProgram {
     /**
      * Mint SBTC by depositing zBTC
      */
-async mintSbtc(zbtcAmount) {
-    if (!this.isInitialized) throw new Error("Program not initialized");
+    async mintSbtc(zbtcAmount) {
+        if (!this.isInitialized) throw new Error("Program not initialized");
 
-    try {
-        const user = phantomWallet.publicKey;
+        try {
+            const user = phantomWallet.publicKey;
 
-        const sbtcMint = new anchor.web3.PublicKey(this.config.SBTC_MINT);
-        const zbtcMint = new anchor.web3.PublicKey(this.config.ZBTC_MINT);
+            const sbtcMint = new anchor.web3.PublicKey(this.config.SBTC_MINT);
+            const zbtcMint = new anchor.web3.PublicKey(this.config.ZBTC_MINT);
 
-        // ✅ Fetch correct squadMultisig from on-chain config
-        // let squadMultisig = await this.getSquadMultisig();
-        // if (typeof squadMultisig==="string") {
-        //     squadMultisig = new anchor.web3.PublicKey(squadMultisig);
-        // }
-        let squadMultisig = new anchor.web3.PublicKey("5eWBQxV7BZSVA4FqDfxQEZRFr67LZkCy9JNkoX2Q4Q5b");
+            // ✅ Fetch correct squadMultisig from on-chain config
+            // let squadMultisig = await this.getSquadMultisig();
+            // if (typeof squadMultisig==="string") {
+            //     squadMultisig = new anchor.web3.PublicKey(squadMultisig);
+            // }
+            let squadMultisig = new anchor.web3.PublicKey("5eWBQxV7BZSVA4FqDfxQEZRFr67LZkCy9JNkoX2Q4Q5b");
 
-        const userTokenAccounts = await this.getUserTokenAccounts();
-        console.log(`userSbtcAccount:${userTokenAccounts.sbtc} userzbtcAccount:${userTokenAccounts.zbtc}`);
-        const treasuryVault = await this.getTreasuryVault();
-        const feeVault = await this.getFeeVault();
-        console.log(`treasuryVault:${treasuryVault} feeVault:${feeVault}`);
-        const oracleStatePda = new anchor.web3.PublicKey(this.config.ORACLE_STATE_ACCOUNT);
+            const userTokenAccounts = await this.getUserTokenAccounts();
+            console.log(`userSbtcAccount:${userTokenAccounts.sbtc} userzbtcAccount:${userTokenAccounts.zbtc}`);
+            const treasuryVault = await this.getTreasuryVault();
+            const feeVault = await this.getFeeVault();
+            console.log(`treasuryVault:${treasuryVault} feeVault:${feeVault}`);
+            const oracleStatePda = new anchor.web3.PublicKey(this.config.ORACLE_STATE_ACCOUNT);
 
-        const tx = await this.program.methods
-            .mintSbtc(new anchor.BN(zbtcAmount))
-            .accounts({
-                user,
-                squadMultisig,
-                config: new anchor.web3.PublicKey("M8uCStPutLUYbpP1hbC4SQBLza29jZQECX4DbYwSPUj"), //this.configPda,
-                zbtcMint: new anchor.web3.PublicKey("91AgzqSfXnCq6AJm5CPPHL3paB25difEJ1TfSnrFKrf"),
-                sbtcMint: new anchor.web3.PublicKey("7dMm9RgrkknPkrp7n1sgkbJFPkG5pAZzEs32NcyjeDkW"),
-                userSbtcAccount: new anchor.web3.PublicKey(userTokenAccounts.sbtc),
-                userZbtcAccount: new anchor.web3.PublicKey(userTokenAccounts.zbtc),
-                treasuryZbtcVault: new anchor.web3.PublicKey("FkECS4C9g9xHDCSacUf1cpZ3MEvquxuD9yb9Ao4asES8"),
-                feeVault: new anchor.web3.PublicKey("DauXPgtQevwJxavMpzH5Zkx3sH7BDuwrZBP5BsYskqgV"),
-                sbtcMintAuthorityPda: new anchor.web3.PublicKey("5RJzxKweQkKxJd5hVYt1jKgddH69nQLhwJZbE2iRibLQ"),
-                treasuryAuthorityPda: new anchor.web3.PublicKey("AZBRUWrYkVeyRXwQFMyDhDt92nPuiCQFy45pTNb8xzbj"),
-                feeAuthorityPda: new anchor.web3.PublicKey("GgHQN7jKvB2AVK3tm3RqSf1Ch7B1sr6WfjDue9KGzisx"),
-                pythPriceAccount: new anchor.web3.PublicKey(this.config.PYTH_BTC_USD_FEED),
-                oracleState: new anchor.web3.PublicKey("n6vZ3Uczer7nG5MLMed9CdYZajeFhzKHRCQyuAcuhuK"),
-                tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
-            })
-            .rpc();
+            const tx = await this.program.methods
+                .mintSbtc(new anchor.BN(zbtcAmount))
+                .accounts({
+                    user,
+                    squadMultisig,
+                    config: new anchor.web3.PublicKey("M8uCStPutLUYbpP1hbC4SQBLza29jZQECX4DbYwSPUj"), //this.configPda,
+                    zbtcMint: new anchor.web3.PublicKey("91AgzqSfXnCq6AJm5CPPHL3paB25difEJ1TfSnrFKrf"),
+                    sbtcMint: new anchor.web3.PublicKey("7dMm9RgrkknPkrp7n1sgkbJFPkG5pAZzEs32NcyjeDkW"),
+                    userSbtcAccount: new anchor.web3.PublicKey(userTokenAccounts.sbtc),
+                    userZbtcAccount: new anchor.web3.PublicKey(userTokenAccounts.zbtc),
+                    treasuryZbtcVault: new anchor.web3.PublicKey("FkECS4C9g9xHDCSacUf1cpZ3MEvquxuD9yb9Ao4asES8"),
+                    feeVault: new anchor.web3.PublicKey("DauXPgtQevwJxavMpzH5Zkx3sH7BDuwrZBP5BsYskqgV"),
+                    sbtcMintAuthorityPda: new anchor.web3.PublicKey("5RJzxKweQkKxJd5hVYt1jKgddH69nQLhwJZbE2iRibLQ"),
+                    treasuryAuthorityPda: new anchor.web3.PublicKey("AZBRUWrYkVeyRXwQFMyDhDt92nPuiCQFy45pTNb8xzbj"),
+                    feeAuthorityPda: new anchor.web3.PublicKey("GgHQN7jKvB2AVK3tm3RqSf1Ch7B1sr6WfjDue9KGzisx"),
+                    pythPriceAccount: new anchor.web3.PublicKey(this.config.PYTH_BTC_USD_FEED),
+                    oracleState: new anchor.web3.PublicKey("n6vZ3Uczer7nG5MLMed9CdYZajeFhzKHRCQyuAcuhuK"),
+                    tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+                })
+                .rpc({
+                    skipPreflight: true,            // Don't simulate before send
+                    commitment: "confirmed",        // Faster confirmation
+                    preflightCommitment: "confirmed"
+                });
 
-        console.log("✅ Mint transaction:", tx);
-        return { success: true, tx };
-    } catch (error) {
-        console.error("❌ Mint SBTC failed:", error);
-        return { success: false, error: error.message };
+                console.log(`✅ Mint submitted: https://explorer.solana.com/tx/${tx}?cluster=devnet`);
+                return { success: true, tx };
+        } catch (error) {
+            console.error("❌ Mint SBTC failed:", error);
+            return { success: false, error: error.message };
+        }
     }
-}
 
     /**
      * Burn SBTC to redeem zBTC
@@ -262,10 +266,14 @@ async mintSbtc(zbtcAmount) {
                     oracleState: new anchor.web3.PublicKey("n6vZ3Uczer7nG5MLMed9CdYZajeFhzKHRCQyuAcuhuK"),
                     tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
                 })
-                .rpc();
+                .rpc({
+                    skipPreflight: true,            // Don't simulate before send
+                    commitment: "confirmed",        // Faster confirmation
+                    preflightCommitment: "confirmed"
+                });
 
-            console.log("✅ Burn transaction:", tx);
-            return { success: true, tx };
+                console.log(`✅ Mint submitted: https://explorer.solana.com/tx/${tx}?cluster=devnet`);
+                return { success: true, tx };
         } catch (error) {
             console.error("❌ Burn SBTC failed:", error);
             return { success: false, error: error.message };

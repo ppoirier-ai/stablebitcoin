@@ -552,6 +552,22 @@ body {
     background: white;
 }
 
+.max-btn {
+    background-color: rgba(189, 58, 7, 0.08);
+    color: #da7314;
+    border: 1px solid rgba(255,255,255,0.2);
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s ease;
+    margin-right: 10px;
+}
+
+.max-btn:hover {
+    background-color: rgba(219, 104, 27, 0.15);
+}
+
 .amount-input {
     flex: 1;
     border: none;

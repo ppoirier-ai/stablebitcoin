@@ -9,6 +9,7 @@ const fromAmountInput = document.getElementById('fromAmount');
 const toAmountInput = document.getElementById('toAmount');
 const swapSubmitBtn = document.getElementById('swapSubmit');
 const connectWalletBtn = document.getElementById('connectWalletBtn');
+const maxBtn = document.getElementById("maxBtn");
 
 // Price display elements
 const sbtcPriceElement = document.querySelector('.stat-number');
@@ -304,6 +305,19 @@ function updateTokenDisplay() {
     }
 }
 
+// MAX button logic
+document.getElementById("maxBtn").addEventListener("click", () => {
+    if (!cachedBalances) return;
+    if (!isSwapped) {
+        // zBTC → SBTC
+        fromAmountInput.value = cachedBalances.zbtc.toFixed(8);
+    } else {
+        // SBTC → zBTC
+        fromAmountInput.value = cachedBalances.sbtc.toFixed(8);
+    }
+    fromAmountInput.dispatchEvent(new Event('input')); // triggers recalculation if needed
+});
+
 // Amount input handling
 fromAmountInput.addEventListener('input', (e) => {
     const amount = parseFloat(e.target.value) || 0;
@@ -388,62 +402,74 @@ function updateSwapDetails(fromAmount, toAmount) {
 
 // Swap submission
 swapSubmitBtn.addEventListener('click', async () => {
-    const fromAmount = fromAmountInput.value;
-    
-    if (!fromAmount) {
-        showNotification('Please enter amount to swap', 'error');
+    let fromAmount = fromAmountInput.value.trim();
+
+    if (!fromAmount || isNaN(fromAmount) || parseFloat(fromAmount) <= 0) {
+        showNotification('Please enter a valid amount', 'error');
         return;
     }
 
     if (!isWalletConnected) {
-        showNotification('Please connect your wallet to perform swaps', 'error');
+        showNotification('Please connect your wallet first', 'error');
         return;
     }
 
     try {
-        // Initialize program if not already done
+        // Ensure program is ready
         if (!otcSwapProgram.isInitialized) {
             await otcSwapProgram.initialize();
+        }
+
+        // Refresh balances
+        await updateRealBalances();
+
+        // Convert to token base units (8 decimals)
+        const amount = Math.floor(parseFloat(fromAmount) * 1e8);
+
+        // ✅ Validate balance BEFORE sending tx
+        if (!isSwapped) {
+            // zBTC → sBTC
+            if (cachedBalances.zbtc * 1e8 < amount) {
+                showNotification(`Insufficient zBTC balance`, 'error');
+                return;
+            }
+        } else {
+            // sBTC → zBTC
+            if (cachedBalances.sbtc * 1e8 < amount) {
+                showNotification(`Insufficient SBTC balance`, 'error');
+                return;
+            }
         }
 
         // Show loading state
         const restoreButton = addLoadingState(swapSubmitBtn, 'Processing...');
 
-        // Convert from UI to integer (8 decimals, like BTC style tokens)
-        const amount = Math.floor(parseFloat(fromAmount) * 1e8);
-
         let result;
         if (!isSwapped) {
-            // zBTC → SBTC
-            console.log("🔄 Minting SBTC by depositing zBTC");
+            // Mint SBTC
             result = await otcSwapProgram.mintSbtc(amount);
         } else {
-            // SBTC → zBTC
-            console.log("🔄 Burning SBTC to redeem zBTC");
+            // Burn SBTC
             result = await otcSwapProgram.burnSbtc(amount);
         }
 
         if (result.success) {
-            showNotification('✅ Swap completed successfully!', 'success');
-
-            // Reset form
+            showNotification('✅ Swap completed!', 'success');
             fromAmountInput.value = '';
             toAmountInput.value = '';
-
-            // Refresh balances
             await updateRealBalances();
         } else {
-            showNotification(`❌ Swap failed: ${result.error}`, 'error');
+            showNotification(`⚠️ Swap failed: ${result.error}`, 'error');
         }
 
         restoreButton();
 
-    } catch (error) {
-        console.error('Swap error:', error);
-        showNotification('Swap failed. Please try again.', 'error');
-        handleSwapError(error);
+    } catch (err) {
+        console.error('Swap error:', err);
+        showNotification('Unexpected swap error', 'error');
     }
 });
+
 
 // Fetch fresh balances and apply to the UI based on isSwapped
 async function updateRealBalances() {
