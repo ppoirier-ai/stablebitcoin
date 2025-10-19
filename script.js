@@ -221,10 +221,7 @@ async function updatePriceData() {
                 // Update UI
                 updatePriceDisplay();
                 // Update swap details with current prices
-                if (fromAmountInput.value && toAmountInput.value) {
-                    updateSwapDetails(parseFloat(fromAmountInput.value), parseFloat(toAmountInput.value));
-                }
-                updateExchangeRateOnly();
+                updateSwapDetails(parseFloat(fromAmountInput.value), parseFloat(toAmountInput.value));
             }
         } else {
             console.error('Failed to fetch price data:', priceData.errors);
@@ -285,7 +282,7 @@ swapTokensBtn.addEventListener('click', () => {
   // update labels and balances
   updateTokenDisplay();
   applyBalancesToUI(); // <-- rebind cached balances to the correct side
-  updateExchangeRateOnly();
+  updateSwapDetails(parseFloat(fromAmount), parseFloat(toAmount));
 
   // tiny animation
   swapTokensBtn.style.transform = 'rotate(180deg)';
@@ -362,78 +359,56 @@ fromAmountInput.addEventListener('input', (e) => {
 
 // Update swap details
 function updateSwapDetails(fromAmount, toAmount) {
-    const exchangeRate = document.querySelector('.detail-row:nth-child(1) span:last-child');
+    const exchangeRateField = document.querySelector('.detail-row:nth-child(1) span:last-child');
     const minimumReceived = document.querySelector('.detail-row:nth-child(2) span:last-child');
     const priceImpact = document.querySelector('.detail-row:nth-child(3) span:last-child');
 
-    if (exchangeRate) {
-        let rate;
-        if (isOracleConnected && currentSBTCPrice > 0 && currentBTCPrice > 0) {
-            // Use real Oracle exchange rate
-            rate = (currentSBTCPrice / currentBTCPrice).toFixed(4);
-        } else {
-            // Fallback to calculated rate
-            rate = (toAmount / fromAmount).toFixed(4);
-        }
-        exchangeRate.textContent = `1 zBTC = ${rate} SBTC`;
+    // ✅ Detect empty input
+    const hasValidInput = !isNaN(fromAmount) && fromAmount > 0 && !isNaN(toAmount);
+
+    // ✅ Update Exchange Rate safely
+    if (currentSBTCPrice > 0 && currentBTCPrice > 0) {
+        const rate = (currentSBTCPrice / currentBTCPrice).toFixed(4);
+        exchangeRateField.textContent = !isSwapped
+            ? `1 zBTC = ${rate} SBTC`
+            : `1 SBTC = ${(1 / rate).toFixed(4)} zBTC`;
+    } else {
+        exchangeRateField.textContent = !isSwapped
+            ? `1 zBTC = 1.0000 SBTC`
+            : `1 SBTC = 1.0000 zBTC`;
     }
-    
-    if (minimumReceived) {
-        // 0.5% slippage
+
+    // ✅ Safe Minimum Received
+    if (hasValidInput) {
         const slippage = 0.005;
         const minimum = toAmount * (1 - slippage);
-        
-        // Format with commas for better readability
         const formattedMinimum = minimum.toLocaleString('en-US', {
             minimumFractionDigits: 6,
             maximumFractionDigits: 6
         });
-        
-        minimumReceived.textContent = `${formattedMinimum} SBTC`;
+
+        minimumReceived.textContent = !isSwapped
+            ? `${formattedMinimum} SBTC`
+            : `${formattedMinimum} zBTC`;
+    } else {
+        minimumReceived.textContent = !isSwapped ? `0 SBTC` : `0 zBTC`;
     }
-    
-    if (priceImpact) {
-        // Calculate price impact based on Oracle data
+
+    // ✅ Safe Price Impact
+    if (hasValidInput) {
         let impact = 0;
-        if (isOracleConnected && currentSBTCPrice > 0) {
-            // Simulate price impact based on trade size vs Oracle price
+        if (isOracleConnected && currentBTCPrice > 0) {
             const tradeValue = fromAmount * currentBTCPrice;
-            const impactFactor = Math.min(tradeValue / 10000, 0.1); // Max 10% impact
+            const impactFactor = Math.min(tradeValue / 10000, 0.1);
             impact = (impactFactor * 100).toFixed(2);
-        } else {
-            // Fallback simulation
-            impact = (Math.random() * 0.1).toFixed(2);
         }
-        
         priceImpact.textContent = `${impact}%`;
         priceImpact.className = parseFloat(impact) < 0.05 ? 'positive' : '';
-    }
-}
-
-function updateExchangeRateOnly() {
-    const exchangeRateField = document.querySelector('.detail-row:nth-child(1) span:last-child');
-
-    if (!exchangeRateField) return;
-
-    if (currentSBTCPrice > 0 && currentBTCPrice > 0) {
-        // Calculate true oracle rate
-        const rate = (currentSBTCPrice / currentBTCPrice).toFixed(4);
-
-        // Respect token direction (flip if swapped)
-        if (!isSwapped) {
-            exchangeRateField.textContent = `1 zBTC = ${rate} SBTC`;
-        } else {
-            const inverseRate = (1 / rate).toFixed(4);
-            exchangeRateField.textContent = `1 SBTC = ${inverseRate} zBTC`;
-        }
     } else {
-        // Show neutral fallback
-        exchangeRateField.textContent = isSwapped
-            ? `1 SBTC = 1.0000 zBTC`
-            : `1 zBTC = 1.0000 SBTC`;
+        priceImpact.textContent = `0%`;
+        priceImpact.className = '';
     }
 }
-
 
 // Swap submission
 swapSubmitBtn.addEventListener('click', async () => {
@@ -505,7 +480,6 @@ swapSubmitBtn.addEventListener('click', async () => {
     }
 });
 
-
 // Fetch fresh balances and apply to the UI based on isSwapped
 async function updateRealBalances() {
   if (!otcSwapProgram.isInitialized) return;
@@ -535,7 +509,6 @@ function applyBalancesToUI() {
     toBalEl.textContent   = `Balance: ${cachedBalances.sbtc.toFixed(8)} SBTC`;
   }
 }
-
 
 // Notification system
 function showNotification(message, type = 'info') {
