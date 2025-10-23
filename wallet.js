@@ -1,8 +1,3 @@
-/**
- * Phantom Wallet Integration
- * Handles wallet connection, disconnection, and state management
- */
-
 class PhantomWallet {
     constructor() {
         this.wallet = null;
@@ -10,8 +5,7 @@ class PhantomWallet {
         this.publicKey = null;
         this.address = null;
         this.listeners = [];
-        
-        // Bind methods
+
         this.connect = this.connect.bind(this);
         this.disconnect = this.disconnect.bind(this);
         this.getBalance = this.getBalance.bind(this);
@@ -24,20 +18,17 @@ class PhantomWallet {
      */
     async initialize() {
         try {
-            // Check if Phantom is installed
             if (typeof window !== 'undefined' && window.solana && window.solana.isPhantom) {
                 this.wallet = window.solana;
-                console.log('Phantom wallet detected');
-                
-                // Check if already connected
+                // console.log('Phantom wallet detected');
+
                 if (this.wallet.isConnected) {
                     this.connected = true;
                     this.publicKey = this.wallet.publicKey;
                     this.address = this.publicKey.toString();
-                    console.log('Wallet already connected:', this.address);
+                    // console.log('Wallet already connected:', this.address);
                 }
-                
-                // Set up event listeners
+
                 this.setupEventListeners();
                 
                 return true;
@@ -57,9 +48,8 @@ class PhantomWallet {
     setupEventListeners() {
         if (!this.wallet) return;
 
-        // Listen for account changes
         this.wallet.on('accountChanged', (publicKey) => {
-            console.log('Account changed:', publicKey);
+            // console.log('Account changed:', publicKey);
             if (publicKey) {
                 this.publicKey = publicKey;
                 this.address = publicKey.toString();
@@ -72,9 +62,8 @@ class PhantomWallet {
             this.notifyListeners();
         });
 
-        // Listen for disconnect events
         this.wallet.on('disconnect', () => {
-            console.log('Wallet disconnected');
+            // console.log('Wallet disconnected');
             this.connected = false;
             this.publicKey = null;
             this.address = null;
@@ -91,9 +80,8 @@ class PhantomWallet {
                 throw new Error('Phantom wallet not detected. Please install Phantom wallet.');
             }
 
-            console.log('Connecting to Phantom wallet...');
-            
-            // Request connection
+            // console.log('Connecting to Phantom wallet...');
+
             const response = await this.wallet.connect();
             
             if (response && response.publicKey) {
@@ -101,7 +89,7 @@ class PhantomWallet {
                 this.publicKey = response.publicKey;
                 this.address = response.publicKey.toString();
                 
-                console.log('Wallet connected successfully:', this.address);
+                // console.log('Wallet connected successfully:', this.address);
                 this.notifyListeners();
                 
                 return {
@@ -135,7 +123,7 @@ class PhantomWallet {
                 throw new Error('No wallet connected');
             }
 
-            console.log('Disconnecting wallet...');
+            // console.log('Disconnecting wallet...');
             
             // Request disconnection
             await this.wallet.disconnect();
@@ -144,7 +132,7 @@ class PhantomWallet {
             this.publicKey = null;
             this.address = null;
             
-            console.log('Wallet disconnected successfully');
+            // console.log('Wallet disconnected successfully');
             this.notifyListeners();
             
             return {
@@ -188,39 +176,18 @@ class PhantomWallet {
      * Sign a transaction
      */
     async signTransaction(transaction) {
-    if (!this.connected || !this.wallet) throw new Error('Wallet not connected');
-    const signedTransaction = await this.wallet.signTransaction(transaction);
-    return signedTransaction; // <-- return the Transaction directly
-    }
-
-    // BEFORE (WRONG): returns { success: true, transactions }
-    async signAllTransactions(transactions) {
-    if (!this.connected || !this.wallet) throw new Error('Wallet not connected');
-    const signedTransactions = await this.wallet.signAllTransactions(transactions);
-    return signedTransactions; // <-- return Transaction[]
+        if (!this.connected || !this.wallet) throw new Error('Wallet not connected');
+        const signedTransaction = await this.wallet.signTransaction(transaction);
+        return signedTransaction;
     }
 
     /**
      * Sign multiple transactions
      */
     async signAllTransactions(transactions) {
-        try {
-            if (!this.connected || !this.wallet) {
-                throw new Error('Wallet not connected');
-            }
-
-            const signedTransactions = await this.wallet.signAllTransactions(transactions);
-            return {
-                success: true,
-                transactions: signedTransactions
-            };
-        } catch (error) {
-            console.error('Error signing transactions:', error);
-            return {
-                success: false,
-                error: error.message
-            };
-        }
+        if (!this.connected || !this.wallet) throw new Error('Wallet not connected');
+        const signedTransactions = await this.wallet.signAllTransactions(transactions);
+        return signedTransactions;
     }
 
     /**

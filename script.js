@@ -1,7 +1,3 @@
-// Oracle module is loaded via script tag in HTML
-// Wallet module is loaded via script tag in HTML
-
-// DOM Elements
 const hamburger = document.querySelector('.hamburger');
 const navMenu = document.querySelector('.nav-menu');
 const swapTokensBtn = document.getElementById('swapTokens');
@@ -9,56 +5,44 @@ const fromAmountInput = document.getElementById('fromAmount');
 const toAmountInput = document.getElementById('toAmount');
 const swapSubmitBtn = document.getElementById('swapSubmit');
 const connectWalletBtn = document.getElementById('connectWalletBtn');
-const maxBtn = document.getElementById("maxBtn");
 
-// Price display elements
 const sbtcPriceElement = document.querySelector('.stat-number');
 
-// Oracle state
 let currentSBTCPrice = 0;
 let currentBTCPrice = 0;
 let isOracleConnected = false;
 
-// Wallet state
 let isWalletConnected = false;
-let walletAddress = null;
 
-// Swap functionality
 let isSwapped = false;
 let cachedBalances = { sbtc: 0, zbtc: 0 };
 
-
-// Wallet Integration Functions
 async function initializeWallet() {
     try {
-        console.log('Initializing wallet...');
+        // console.log.log('Initializing wallet...');
         const success = await phantomWallet.initialize();
-        
+
         if (success) {
-            console.log('Wallet initialized successfully');
-            
-            // Add wallet state listener
+            // console.log.log('Wallet initialized successfully');
+
             phantomWallet.addListener(handleWalletStateChange);
-            
-            // Update UI based on current state
+
             updateWalletUI();
         } else {
-            console.warn('Wallet not available');
+            // console.log.warn('Wallet not available');
             updateWalletUI();
         }
     } catch (error) {
-        console.error('Wallet initialization failed:', error);
+        // console.log.error('Wallet initialization failed:', error);
         updateWalletUI();
     }
 }
 
 function handleWalletStateChange(status) {
-    console.log('Wallet state changed:', status);
+    // console.log.log('Wallet state changed:', status);
     isWalletConnected = status.connected;
-    walletAddress = status.address;
     updateWalletUI();
 
-    // Initialize program when wallet connects
     if (status.connected) {
         initializeSwapProgram();
     }
@@ -66,21 +50,19 @@ function handleWalletStateChange(status) {
 
 function updateWalletUI() {
     if (!connectWalletBtn) return;
-    
+
     const status = phantomWallet.getStatus();
-    
+
     if (status.connected && status.address) {
-        // Wallet is connected
         connectWalletBtn.innerHTML = `
             <i class="fas fa-wallet"></i>
             <span>${phantomWallet.formatAddress(status.address)}</span>
         `;
         connectWalletBtn.classList.add('connected');
         connectWalletBtn.onclick = handleDisconnectWallet;
-        
+
         showNotification(`Wallet connected: ${phantomWallet.formatAddress(status.address)}`, 'success');
     } else if (phantomWallet.isAvailable()) {
-        // Wallet is available but not connected
         connectWalletBtn.innerHTML = `
             <i class="fas fa-wallet"></i>
             <span>Connect Wallet</span>
@@ -88,7 +70,6 @@ function updateWalletUI() {
         connectWalletBtn.classList.remove('connected');
         connectWalletBtn.onclick = handleConnectWallet;
     } else {
-        // Wallet not available
         connectWalletBtn.innerHTML = `
             <i class="fas fa-download"></i>
             <span>Install Phantom</span>
@@ -98,14 +79,13 @@ function updateWalletUI() {
     }
 }
 
-// Initialize swap program when wallet connects
 async function initializeSwapProgram() {
     try {
         await otcSwapProgram.initialize();
         await updateRealBalances();
         showNotification('Swap program connected!', 'success');
     } catch (error) {
-        console.error('Failed to initialize swap program:', error);
+        // console.log.error('Failed to initialize swap program:', error);
         showNotification('Swap program not available', 'error');
     }
 }
@@ -122,7 +102,7 @@ async function handleConnectWallet() {
             showNotification(`Connection failed: ${result.error}`, 'error');
         }
     } catch (error) {
-        console.error('Wallet connection error:', error);
+        // console.log.error('Wallet connection error:', error);
         showNotification('Wallet connection failed', 'error');
     } finally {
         setWalletButtonLoading(false);
@@ -141,7 +121,7 @@ async function handleDisconnectWallet() {
             showNotification(`Disconnect failed: ${result.error}`, 'error');
         }
     } catch (error) {
-        console.error('Wallet disconnection error:', error);
+        // console.log.error('Wallet disconnection error:', error);
         showNotification('Wallet disconnection failed', 'error');
     } finally {
         setWalletButtonLoading(false);
@@ -169,29 +149,24 @@ function setWalletButtonLoading(loading) {
     }
 }
 
-// Oracle Integration Functions
 async function initializeOracle() {
     try {
         showNotification('Connecting to Oracle...', 'info');
-        
-        // Initialize Oracle connection
+
         await oracle.initialize();
         isOracleConnected = true;
-        
-        // Fetch initial price data
+
         await updatePriceData();
         
         showNotification('Oracle connected successfully!', 'success');
-        
-        // Set up periodic price updates
-        setInterval(updatePriceData, 30000); // Update every 30 seconds
-        
+
+        setInterval(updatePriceData, 30000);
+
     } catch (error) {
-        console.error('Oracle initialization failed:', error);
+        // console.log.error('Oracle initialization failed:', error);
         showNotification('Failed to connect to Oracle. Using fallback data.', 'error');
         isOracleConnected = false;
-        
-        // Use fallback price data
+
         updatePriceTicker();
     }
 }
@@ -203,32 +178,29 @@ async function updatePriceData() {
 
     try {
         const priceData = await oracle.getPriceData();
-        
+
         if (priceData.success && priceData.data) {
             const { sbtc, btc } = priceData.data;
-            
+
             if (sbtc && btc) {
                 currentSBTCPrice = sbtc.sbtc_target_price;
                 currentBTCPrice = btc.btc_price;
-                
-                // Validate price
+
                 const validation = oracle.validatePrice(currentSBTCPrice, currentBTCPrice);
                 if (!validation.valid) {
-                    console.warn('Price validation failed:', validation.reason);
+                    // console.log.warn('Price validation failed:', validation.reason);
                     showNotification('Price validation warning: ' + validation.reason, 'error');
                 }
-                
-                // Update UI
+
                 updatePriceDisplay();
-                // Update swap details with current prices
                 updateSwapDetails(parseFloat(fromAmountInput.value), parseFloat(toAmountInput.value));
             }
         } else {
-            console.error('Failed to fetch price data:', priceData.errors);
+            // console.log.error('Failed to fetch price data:', priceData.errors);
             showNotification('Failed to fetch latest prices from Oracle', 'error');
         }
     } catch (error) {
-        console.error('Error updating price data:', error);
+        // console.log.error('Error updating price data:', error);
         showNotification('Error updating prices: ' + error.message, 'error');
     }
 }
@@ -240,13 +212,11 @@ function updatePriceDisplay() {
     }
 }
 
-// Mobile Navigation Toggle
 hamburger.addEventListener('click', () => {
     hamburger.classList.toggle('active');
     navMenu.classList.toggle('active');
 });
 
-// Close mobile menu when clicking on a link
 document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', () => {
         hamburger.classList.remove('active');
@@ -254,7 +224,6 @@ document.querySelectorAll('.nav-link').forEach(link => {
     });
 });
 
-// Smooth scrolling for navigation links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         e.preventDefault();
@@ -272,24 +241,19 @@ swapTokensBtn.addEventListener('click', () => {
   const fromAmount = fromAmountInput.value;
   const toAmount   = toAmountInput.value;
 
-  // swap amounts
   fromAmountInput.value = toAmount;
   toAmountInput.value   = fromAmount;
 
-  // toggle state
   isSwapped = !isSwapped;
 
-  // update labels and balances
   updateTokenDisplay();
-  applyBalancesToUI(); // <-- rebind cached balances to the correct side
+  applyBalancesToUI();
   updateSwapDetails(parseFloat(fromAmount), parseFloat(toAmount));
 
-  // tiny animation
   swapTokensBtn.style.transform = 'rotate(180deg)';
   setTimeout(() => { swapTokensBtn.style.transform = 'rotate(0deg)'; }, 300);
 });
 
-// Update token display based on swap state
 function updateTokenDisplay() {
     const fromTokenSymbol = document.querySelector('#fromAmount').parentElement.querySelector('.token-symbol');
     const toTokenSymbol = document.querySelector('#toAmount').parentElement.querySelector('.token-symbol');
@@ -312,43 +276,34 @@ function updateTokenDisplay() {
     }
 }
 
-// MAX button logic
 document.getElementById("maxBtn").addEventListener("click", () => {
     if (!cachedBalances) return;
     if (!isSwapped) {
-        // zBTC → SBTC
         fromAmountInput.value = cachedBalances.zbtc.toFixed(8);
     } else {
-        // SBTC → zBTC
         fromAmountInput.value = cachedBalances.sbtc.toFixed(8);
     }
     fromAmountInput.dispatchEvent(new Event('input')); // triggers recalculation if needed
 });
 
-// Amount input handling
 fromAmountInput.addEventListener('input', (e) => {
     const amount = parseFloat(e.target.value) || 0;
     
     if (amount > 0) {
-        // Calculate exchange rate based on Oracle prices
         let exchangeRate = 1.0; // Default fallback
         
         if (isOracleConnected && currentSBTCPrice > 0 && currentBTCPrice > 0) {
-            // Use real Oracle prices for calculation
             exchangeRate = currentSBTCPrice / currentBTCPrice;
         } else {
-            // Show warning if Oracle data is not available
             showNotification('Using estimated exchange rate. Oracle data unavailable.', 'error');
         }
         
         const calculatedAmount = amount * exchangeRate;
         toAmountInput.value = calculatedAmount.toFixed(6);
-        
-        // Enable swap button
+
         swapSubmitBtn.disabled = false;
         swapSubmitBtn.style.opacity = '1';
-        
-        // Update swap details
+
         updateSwapDetails(amount, calculatedAmount);
     } else {
         toAmountInput.value = '';
@@ -357,16 +312,13 @@ fromAmountInput.addEventListener('input', (e) => {
     }
 });
 
-// Update swap details
 function updateSwapDetails(fromAmount, toAmount) {
     const exchangeRateField = document.querySelector('.detail-row:nth-child(1) span:last-child');
     const minimumReceived = document.querySelector('.detail-row:nth-child(2) span:last-child');
     const priceImpact = document.querySelector('.detail-row:nth-child(3) span:last-child');
 
-    // ✅ Detect empty input
     const hasValidInput = !isNaN(fromAmount) && fromAmount > 0 && !isNaN(toAmount);
 
-    // ✅ Update Exchange Rate safely
     if (currentSBTCPrice > 0 && currentBTCPrice > 0) {
         const rate = (currentSBTCPrice / currentBTCPrice).toFixed(4);
         exchangeRateField.textContent = !isSwapped
@@ -378,7 +330,6 @@ function updateSwapDetails(fromAmount, toAmount) {
             : `1 SBTC = 1.0000 zBTC`;
     }
 
-    // ✅ Safe Minimum Received
     if (hasValidInput) {
         const slippage = 0.005;
         const minimum = toAmount * (1 - slippage);
@@ -394,7 +345,6 @@ function updateSwapDetails(fromAmount, toAmount) {
         minimumReceived.textContent = !isSwapped ? `0 SBTC` : `0 zBTC`;
     }
 
-    // ✅ Safe Price Impact
     if (hasValidInput) {
         let impact = 0;
         if (isOracleConnected && currentBTCPrice > 0) {
@@ -410,7 +360,6 @@ function updateSwapDetails(fromAmount, toAmount) {
     }
 }
 
-// Swap submission
 swapSubmitBtn.addEventListener('click', async () => {
     let fromAmount = fromAmountInput.value.trim();
 
@@ -425,41 +374,32 @@ swapSubmitBtn.addEventListener('click', async () => {
     }
 
     try {
-        // Ensure program is ready
         if (!otcSwapProgram.isInitialized) {
             await otcSwapProgram.initialize();
         }
 
-        // Refresh balances
         await updateRealBalances();
 
-        // Convert to token base units (8 decimals)
         const amount = Math.floor(parseFloat(fromAmount) * 1e8);
 
-        // ✅ Validate balance BEFORE sending tx
         if (!isSwapped) {
-            // zBTC → sBTC
             if (cachedBalances.zbtc * 1e8 < amount) {
                 showNotification(`Insufficient zBTC balance`, 'error');
                 return;
             }
         } else {
-            // sBTC → zBTC
             if (cachedBalances.sbtc * 1e8 < amount) {
                 showNotification(`Insufficient SBTC balance`, 'error');
                 return;
             }
         }
 
-        // Show loading state
         const restoreButton = addLoadingState(swapSubmitBtn, 'Processing...');
 
         let result;
         if (!isSwapped) {
-            // Mint SBTC
             result = await otcSwapProgram.mintSbtc(amount);
         } else {
-            // Burn SBTC
             result = await otcSwapProgram.burnSbtc(amount);
         }
 
@@ -475,12 +415,11 @@ swapSubmitBtn.addEventListener('click', async () => {
         restoreButton();
 
     } catch (err) {
-        console.error('Swap error:', err);
+        // console.log.error('Swap error:', err);
         showNotification('Unexpected swap error', 'error');
     }
 });
 
-// Fetch fresh balances and apply to the UI based on isSwapped
 async function updateRealBalances() {
   if (!otcSwapProgram.isInitialized) return;
 
@@ -489,7 +428,7 @@ async function updateRealBalances() {
     cachedBalances = balances; // keep latest in memory
     applyBalancesToUI();
   } catch (e) {
-    console.error('Failed to fetch balances:', e);
+    // console.log.error('Failed to fetch balances:', e);
   }
 }
 
@@ -500,11 +439,9 @@ function applyBalancesToUI() {
   if (!fromBalEl || !toBalEl) return;
 
   if (isSwapped) {
-    // From is SBTC, To is zBTC
     fromBalEl.textContent = `Balance: ${cachedBalances.sbtc.toFixed(8)} SBTC`;
     toBalEl.textContent   = `Balance: ${cachedBalances.zbtc.toFixed(8)} zBTC`;
   } else {
-    // From is zBTC, To is SBTC
     fromBalEl.textContent = `Balance: ${cachedBalances.zbtc.toFixed(8)} zBTC`;
     toBalEl.textContent   = `Balance: ${cachedBalances.sbtc.toFixed(8)} SBTC`;
   }
@@ -512,7 +449,6 @@ function applyBalancesToUI() {
 
 // Notification system
 function showNotification(message, type = 'info') {
-    // Remove existing notifications
     const existingNotification = document.querySelector('.notification');
     if (existingNotification) {
         existingNotification.remove();
@@ -695,18 +631,10 @@ function addLoadingState(element, text = 'Loading...') {
 }
 
 // Error handling for swap
-function handleSwapError(error) {
-    console.error('Swap error:', error);
-    showNotification('Swap failed. Please try again.', 'error');
-    
-    // Reset button state
-    swapSubmitBtn.innerHTML = '<i class="fas fa-exchange-alt"></i> Swap zBTC for SBTC';
-    swapSubmitBtn.disabled = false;
-}
 
 // Add error boundary for unhandled errors
 window.addEventListener('error', (event) => {
-    console.error('Unhandled error:', event.error);
+    // console.log.error('Unhandled error:', event.error);
     showNotification('An unexpected error occurred. Please refresh the page.', 'error');
 });
 

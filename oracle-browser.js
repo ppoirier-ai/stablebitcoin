@@ -1,17 +1,5 @@
-/**
- * StableBitcoin Oracle Integration - Browser Compatible Version
- * This version works without external dependencies by using fetch API
- */
+const ORACLE_CONFIG = window.ENV.ORACLE_CONFIG;
 
-// Oracle Configuration
-const ORACLE_CONFIG = {
-    RPC_URL: 'https://api.devnet.solana.com',
-    PROGRAM_ID: '8UDq3zAd8RqqkVVpCS8bRbRuWUQyDD6ioVVmtYtUCy6y',
-    PYTH_PRICE_FEED: '0x3d824c7f7c26ed1c85421ecec8c754e6b52d66a4e45de20a9c9ea91de8b396f9',
-    ORACLE_STATE_ACCOUNT: 'n6vZ3Uczer7nG5MLMed9CdYZajeFhzKHRCQyuAcuhuK'
-};
-
-// Browser-compatible Buffer replacement
 class BrowserBuffer {
     static from(data, encoding) {
         if (encoding === 'base64') {
@@ -42,7 +30,7 @@ class StableBitcoinOracle {
         try {
             // Test connection by getting version
             const response = await this.makeRpcCall('getVersion');
-            console.log('Connected to Solana DevNet:', response);
+            // console.log('Connected to Solana DevNet:', response);
             
             this.isInitialized = true;
             return true;
@@ -174,10 +162,10 @@ class StableBitcoinOracle {
     async getCurrentBitcoinPrice() {
     try {
         const res = await fetch(
-        `https://hermes.pyth.network/v2/updates/price/latest?ids[]=${ORACLE_CONFIG.PYTH_PRICE_FEED}`
+        `https://hermes.pyth.network/v2/updates/price/latest?ids[]=${ORACLE_CONFIG.PYTH_PRICE_FEED_ID}`
         );
         const json = await res.json();
-        console.log("Hermes JSON:", json);
+        // console.log("Hermes JSON:", json);
 
         // Validate response structure
         if (!json.parsed || !Array.isArray(json.parsed) || json.parsed.length === 0) {
@@ -192,7 +180,7 @@ class StableBitcoinOracle {
 
         // Convert price using exponent
         const price = Number(priceInfo.price) * Math.pow(10, priceInfo.expo);
-        console.log("BTC price: ", price);
+        // console.log("BTC price: ", price);
 
         return {
         success: true,
@@ -207,7 +195,7 @@ class StableBitcoinOracle {
         };
     } catch (err) {
         console.error("Hermes price fetch failed:", err);
-        console.log("Switching to fallback BTC price...");
+        // console.log("Switching to fallback BTC price...");
         return this.getFallbackBtcPrice(err.message);
     }
     }
@@ -305,8 +293,6 @@ class StableBitcoinOracle {
     }
 }
 
-// Create singleton instance
 const oracle = new StableBitcoinOracle();
 window.oracle = oracle;
 window.StableBitcoinOracle = StableBitcoinOracle;
-window.ORACLE_CONFIG = ORACLE_CONFIG;

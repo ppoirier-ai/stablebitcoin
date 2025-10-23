@@ -37,7 +37,7 @@ class StableBitcoinOracle {
         try {
             // Test connection
             const version = await this.connection.getVersion();
-            console.log('Connected to Solana DevNet:', version);
+            // console.log('Connected to Solana DevNet:', version);
             
             this.isInitialized = true;
             return true;
