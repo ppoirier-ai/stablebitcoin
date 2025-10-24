@@ -134,29 +134,37 @@ class OtcSwapProgram {
      * Get token accounts for a user
      */
     async getUserTokenAccounts() {
-        if (!this.isInitialized) throw new Error('Program not initialized');
+    if (!this.isInitialized) throw new Error("Program not initialized");
 
-        try {
-            const user = phantomWallet.publicKey;
+    try {
+        const user = phantomWallet.publicKey;
 
-            const sbtcTokenAccount = await anchor.utils.token.associatedAddress({
-                mint: this.config.SBTC_MINT,
-                owner: user,
-            });
+        // Ensure both token accounts exist (creates them if missing)
+        const sbtcAccount = await window.splToken.getOrCreateAssociatedTokenAccount(
+            this.connection,         // connection
+            phantomWallet,           // payer
+            this.config.SBTC_MINT,   // mint address
+            user,                    // owner
+            true                     // allow owner to be different from payer
+        );
 
-            const zbtcTokenAccount = await anchor.utils.token.associatedAddress({
-                mint: this.config.ZBTC_MINT,
-                owner: user,
-            });
+        const zbtcAccount = await window.splToken.getOrCreateAssociatedTokenAccount(
+            this.connection,
+            phantomWallet,
+            this.config.ZBTC_MINT,
+            user,
+            true
+        );
 
-            return {
-                sbtc: sbtcTokenAccount,
-                zbtc: zbtcTokenAccount
-            };
-        } catch (error) {
-            console.error('Error getting user token accounts:', error);
-            throw error;
-        }
+        return {
+        sbtc: sbtcAccount.address,
+        zbtc: zbtcAccount.address
+        };
+
+    } catch (error) {
+        console.error("Error ensuring user token accounts:", error);
+        throw error;
+    }
     }
 
     /**

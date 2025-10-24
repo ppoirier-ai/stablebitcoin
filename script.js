@@ -293,7 +293,8 @@ fromAmountInput.addEventListener('input', (e) => {
         let exchangeRate = 1.0; // Default fallback
         
         if (isOracleConnected && currentSBTCPrice > 0 && currentBTCPrice > 0) {
-            exchangeRate = currentBTCPrice / currentSBTCPrice;
+            const rate = (currentBTCPrice / currentSBTCPrice).toFixed(4);
+            exchangeRate = !isSwapped ? rate : 1/rate;
         } else {
             showNotification('Using estimated exchange rate. Oracle data unavailable.', 'error');
         }
