@@ -293,7 +293,8 @@ fromAmountInput.addEventListener('input', (e) => {
         let exchangeRate = 1.0; // Default fallback
         
         if (isOracleConnected && currentSBTCPrice > 0 && currentBTCPrice > 0) {
-            exchangeRate = currentSBTCPrice / currentBTCPrice;
+            const rate = (currentBTCPrice / currentSBTCPrice).toFixed(4);
+            exchangeRate = !isSwapped ? rate : 1/rate;
         } else {
             showNotification('Using estimated exchange rate. Oracle data unavailable.', 'error');
         }
@@ -320,7 +321,7 @@ function updateSwapDetails(fromAmount, toAmount) {
     const hasValidInput = !isNaN(fromAmount) && fromAmount > 0 && !isNaN(toAmount);
 
     if (currentSBTCPrice > 0 && currentBTCPrice > 0) {
-        const rate = (currentSBTCPrice / currentBTCPrice).toFixed(4);
+        const rate = (currentBTCPrice / currentSBTCPrice).toFixed(4);
         exchangeRateField.textContent = !isSwapped
             ? `1 zBTC = ${rate} SBTC`
             : `1 SBTC = ${(1 / rate).toFixed(4)} zBTC`;

@@ -359,6 +359,10 @@
 
 <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
 <script type="module">
+  import * as splToken from "https://esm.sh/@solana/spl-token@0.4.6";
+  window.splToken = splToken;
+</script>
+<script type="module">
   import * as anchor from "https://esm.sh/@coral-xyz/anchor@0.31.1";
   window.anchor = anchor;
 </script>
