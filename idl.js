@@ -26,11 +26,7 @@ otcSwapIdl = {
           "signer": true
         },
         {
-          "name": "squad_multisig",
-          "docs": [
-            "The multisig used as the seed for config/treasury/fees (does not need to be a signer here)",
-            "Supply the same squad_multisig that was used during initialize"
-          ]
+          "name": "squad_multisig"
         },
         {
           "name": "config",
@@ -141,10 +137,16 @@ otcSwapIdl = {
           }
         },
         {
-          "name": "pyth_price_account"
+          "name": "authorized_zbtc_pyth_feed",
+          "relations": [
+            "config"
+          ]
         },
         {
-          "name": "oracle_state"
+          "name": "authorized_sbtc_oracle_state_pda",
+          "relations": [
+            "config"
+          ]
         },
         {
           "name": "token_program",
@@ -356,10 +358,7 @@ otcSwapIdl = {
           "signer": true
         },
         {
-          "name": "squad_multisig",
-          "docs": [
-            "The same squad_multisig used at `initialize` (NOT a signer here)"
-          ]
+          "name": "squad_multisig"
         },
         {
           "name": "config",
@@ -505,10 +504,16 @@ otcSwapIdl = {
           }
         },
         {
-          "name": "pyth_price_account"
+          "name": "authorized_zbtc_pyth_feed",
+          "relations": [
+            "config"
+          ]
         },
         {
-          "name": "oracle_state"
+          "name": "authorized_sbtc_oracle_state_pda",
+          "relations": [
+            "config"
+          ]
         },
         {
           "name": "token_program",
@@ -519,95 +524,6 @@ otcSwapIdl = {
         {
           "name": "zbtc_amount",
           "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "test_oracle_reading",
-      "discriminator": [
-        101,
-        2,
-        189,
-        107,
-        92,
-        14,
-        100,
-        184
-      ],
-      "accounts": [
-        {
-          "name": "oracle_state"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "test_pyth_reading",
-      "discriminator": [
-        89,
-        97,
-        102,
-        235,
-        111,
-        19,
-        55,
-        212
-      ],
-      "accounts": [
-        {
-          "name": "pyth_price_account"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "update_pyth_feed",
-      "discriminator": [
-        252,
-        201,
-        174,
-        75,
-        3,
-        112,
-        151,
-        171
-      ],
-      "accounts": [
-        {
-          "name": "config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103,
-                  95,
-                  118,
-                  49
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "squad_multisig"
-              }
-            ]
-          }
-        },
-        {
-          "name": "squad_multisig",
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "new_zbtc_pyth_feed",
-          "type": "pubkey"
         }
       ]
     }
@@ -671,116 +587,121 @@ otcSwapIdl = {
   "errors": [
     {
       "code": 6000,
-      "name": "Unauthorized",
-      "msg": "Unauthorized"
-    },
-    {
-      "code": 6001,
       "name": "InvalidFeeRate",
       "msg": "Fee rate must be 5% or less"
     },
     {
-      "code": 6002,
+      "code": 6001,
       "name": "InvalidCollateralRatio",
       "msg": "Collateral ratio must be at least 10%"
     },
     {
-      "code": 6003,
+      "code": 6002,
       "name": "InvalidMintAuthority",
       "msg": "sBTC mint must have Squad as initial authority"
     },
     {
-      "code": 6004,
+      "code": 6003,
       "name": "InvalidFreezeAuthority",
       "msg": "sBTC mint must have Squad or no freeze authority"
     },
     {
-      "code": 6005,
+      "code": 6004,
       "name": "InvalidAmount",
       "msg": "Invalid amount"
     },
     {
-      "code": 6006,
+      "code": 6005,
       "name": "InvalidZbtcMint",
       "msg": "Invalid zBTC mint"
     },
     {
-      "code": 6007,
+      "code": 6006,
       "name": "InvalidSbtcMint",
       "msg": "Invalid sBTC mint"
     },
     {
-      "code": 6008,
+      "code": 6007,
       "name": "InvalidTokenAccountOwner",
       "msg": "Invalid token account owner"
     },
     {
-      "code": 6009,
+      "code": 6008,
       "name": "InvalidTokenMint",
       "msg": "Invalid token mint"
     },
     {
-      "code": 6010,
+      "code": 6009,
       "name": "InsufficientBalance",
       "msg": "Insufficient balance"
     },
     {
-      "code": 6011,
+      "code": 6010,
       "name": "Paused",
       "msg": "Protocol paused"
     },
     {
-      "code": 6012,
+      "code": 6011,
       "name": "InsufficientLiquidity",
       "msg": "Insufficient liquidity"
     },
     {
-      "code": 6013,
+      "code": 6012,
       "name": "InsufficientCollateral",
       "msg": "Insufficient collateral"
     },
     {
-      "code": 6014,
+      "code": 6013,
       "name": "InvalidSquadMultisig",
       "msg": "Invalid squad multisig"
     },
     {
-      "code": 6015,
+      "code": 6014,
       "name": "InvalidTreasuryVault",
       "msg": "Invalid treasury vault"
     },
     {
-      "code": 6016,
+      "code": 6015,
       "name": "InvalidFeeVault",
       "msg": "Invalid fee vault"
     },
     {
-      "code": 6017,
+      "code": 6016,
       "name": "InvalidTokenOwner",
       "msg": "Invalid token owner"
     },
     {
-      "code": 6018,
+      "code": 6017,
       "name": "PythError",
       "msg": "Pyth oracle error"
     },
     {
+      "code": 6018,
+      "name": "InvalidPythAccount",
+      "msg": "Invalid Pyth account"
+    },
+    {
       "code": 6019,
+      "name": "InvalidOracleAccount",
+      "msg": "Invalid oracle account"
+    },
+    {
+      "code": 6020,
       "name": "InvalidOracleData",
       "msg": "Invalid oracle data"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "StaleOraclePrice",
       "msg": "Stale price data"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "InvalidPrice",
       "msg": "Invalid price value"
     },
     {
-      "code": 6022,
+      "code": 6023,
       "name": "HighConfidence",
       "msg": "High confidence interval - unreliable data"
     }

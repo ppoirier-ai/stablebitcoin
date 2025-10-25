@@ -245,6 +245,42 @@
                 </div>
             </div>
         </div>
+
+        <!-- Toast container -->
+        <div id="toast-container"
+            style="position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: .5rem;"></div>
+
+            <script>
+            // Small helper to show toasts
+            window.showToast = function (message, type = "info", timeout = 4000) {
+                const toast = document.createElement("div");
+                toast.textContent = message;
+                toast.style.padding = "10px 16px";
+                toast.style.borderRadius = "8px";
+                toast.style.fontFamily = "sans-serif";
+                toast.style.fontSize = "14px";
+                toast.style.color = "white";
+                toast.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+                toast.style.opacity = "0.95";
+
+                // color scheme
+                if (type === "success") toast.style.background = "#16a34a";
+                else if (type === "error") toast.style.background = "#dc2626";
+                else if (type === "warning") toast.style.background = "#eab308";
+                else toast.style.background = "#2563eb"; // info
+
+                const container = document.getElementById("toast-container");
+                container.appendChild(toast);
+
+                // remove after timeout
+                setTimeout(() => {
+                toast.style.transition = "opacity .3s ease";
+                toast.style.opacity = "0";
+                setTimeout(() => toast.remove(), 300);
+                }, timeout);
+            };
+            </script>
+
     </section>
 
     <!-- Features Section -->

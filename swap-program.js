@@ -131,7 +131,7 @@ class OtcSwapProgram {
     }
 
     /**
-     * Get token accounts for a user
+     * Get or create user token accounts (sBTC + zBTC)
      */
     async getUserTokenAccounts() {
     if (!this.isInitialized) throw new Error("Program not initialized");
@@ -139,30 +139,69 @@ class OtcSwapProgram {
     try {
         const user = phantomWallet.publicKey;
 
-        // Ensure both token accounts exist (creates them if missing)
-        const sbtcAccount = await window.splToken.getOrCreateAssociatedTokenAccount(
-            this.connection,         // connection
-            phantomWallet,           // payer
-            this.config.SBTC_MINT,   // mint address
-            user,                    // owner
-            true                     // allow owner to be different from payer
+        const sbtcAta = await window.splToken.getAssociatedTokenAddress(
+        this.config.SBTC_MINT, user
+        );
+        const zbtcAta = await window.splToken.getAssociatedTokenAddress(
+        this.config.ZBTC_MINT, user
         );
 
-        const zbtcAccount = await window.splToken.getOrCreateAssociatedTokenAccount(
-            this.connection,
-            phantomWallet,
-            this.config.ZBTC_MINT,
-            user,
-            true
-        );
+        const sbtcInfo = await this.connection.getAccountInfo(sbtcAta);
+        const zbtcInfo = await this.connection.getAccountInfo(zbtcAta);
 
-        return {
-        sbtc: sbtcAccount.address,
-        zbtc: zbtcAccount.address
-        };
+        const instructions = [];
+
+        if (!sbtcInfo) {
+        instructions.push(
+            window.splToken.createAssociatedTokenAccountInstruction(
+            phantomWallet.publicKey, sbtcAta, user, this.config.SBTC_MINT
+            )
+        );
+        }
+
+        if (!zbtcInfo) {
+        instructions.push(
+            window.splToken.createAssociatedTokenAccountInstruction(
+            phantomWallet.publicKey, zbtcAta, user, this.config.ZBTC_MINT
+            )
+        );
+        }
+
+        if (instructions.length > 0) {
+        window.showToast("Creating your token accounts... Please approve in Phantom", "info");
+
+        const tx = new solanaWeb3.Transaction().add(...instructions);
+        tx.feePayer = phantomWallet.publicKey;
+        const { blockhash } = await this.connection.getLatestBlockhash();
+        tx.recentBlockhash = blockhash;
+
+        const signedTx = await phantomWallet.signTransaction(tx);
+        const sig = await this.connection.sendRawTransaction(signedTx.serialize(), {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        });
+
+        await this.connection.confirmTransaction({
+        signature: sig,
+        blockhash,
+        lastValidBlockHeight: (await this.connection.getLatestBlockhash()).lastValidBlockHeight,
+        }, "confirmed");
+
+        window.showToast("Token accounts created successfully!", "success");
+
+        // window.ENV.DEPLOY_ENV==="mainnet-beta"? console.log(`✅ Mint submitted: https://explorer.solana.com/tx/${tx}`)
+        // : console.log(`✅ ATA creation: https://explorer.solana.com/tx/${sig}?cluster=${window.ENV.DEPLOY_ENV}`);
+        }
+
+        return { sbtc: sbtcAta, zbtc: zbtcAta };
 
     } catch (error) {
-        console.error("Error ensuring user token accounts:", error);
+        if (error.message?.includes("User rejected")) {
+        window.showToast("Transaction rejected in Phantom", "warning");
+        } else {
+        window.showToast("Failed to create token accounts", "error");
+        }
+        console.error("❌ Error ensuring user token accounts:", error);
         throw error;
     }
     }
